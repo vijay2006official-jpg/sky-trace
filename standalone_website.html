@@ -1,0 +1,3244 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voyex AI - Smart AI Travel Planner & Route Explorer</title>
+  <meta name="description" content="Generate personalized day-by-day travel itineraries, interactive route maps, budget breakdowns, and smart packing checklists powered by AI.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#172554',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS for Interactive Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Canvas Confetti for Celebration Animation -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    
+    /* Smooth Map Styling */
+    .leaflet-container { width: 100%; height: 100%; border-radius: 1.5rem; z-index: 10; }
+    
+    /* Print Styles for Itinerary Export */
+    @media print {
+      body { background: white !important; color: black !important; }
+      nav, footer, .no-print, #aiChatDrawer, #aiChatFloatingBtn, #themeToggleBtn { display: none !important; }
+      .app-section { display: block !important; }
+      #section-planner, #section-destinations, #section-packing, #section-booking, #section-map { display: none !important; }
+      #section-itinerary { display: block !important; }
+      .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl { box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-primary-500 selection:text-white transition-colors duration-200">
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <a href="javascript:void(0)" onclick="switchTab('planner')" class="flex items-center gap-3 group">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-primary-500/25 group-hover:scale-105 transition-transform">
+          ✈️
+        </div>
+        <div>
+          <span class="text-xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+            Voyex <span class="text-primary-600">AI</span>
+          </span>
+          <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400 block -mt-1">Smart Travel Master</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Tabs -->
+      <nav class="hidden lg:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
+        <button onclick="switchTab('planner')" data-tab="planner" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all bg-primary-600 text-white shadow-md shadow-primary-500/20">
+          Plan Trip
+        </button>
+        <button onclick="switchTab('itinerary')" data-tab="itinerary" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Itinerary
+        </button>
+        <button onclick="switchTab('flights')" data-tab="flights" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          ✈️ Flights
+        </button>
+        <button onclick="switchTab('trains')" data-tab="trains" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          🚆 Trains
+        </button>
+        <button onclick="switchTab('buses')" data-tab="buses" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          🚌 Buses
+        </button>
+        <button onclick="switchTab('cars')" data-tab="cars" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          🚗 Car Rental
+        </button>
+        <button onclick="switchTab('split')" data-tab="split" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          👥 Split Bill
+        </button>
+        <button onclick="switchTab('photos')" data-tab="photos" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          📸 Photo Spots
+        </button>
+        <button onclick="switchTab('safety')" data-tab="safety" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          🛡️ Safety
+        </button>
+        <button onclick="switchTab('map')" data-tab="map" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Route Map
+        </button>
+        <button onclick="switchTab('destinations')" data-tab="destinations" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Cities
+        </button>
+        <button onclick="switchTab('budget')" data-tab="budget" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Budget
+        </button>
+        <button onclick="switchTab('packing')" data-tab="packing" class="nav-tab-btn px-4 py-2 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Packing
+        </button>
+        <button onclick="switchTab('visa')" data-tab="visa" class="nav-tab-btn px-4 py-2 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Visa & Culture
+        </button>
+        <button onclick="switchTab('booking')" data-tab="booking" class="nav-tab-btn px-4 py-2 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Booking Hub
+        </button>
+      </nav>
+
+      <!-- Right Action Items -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Currency Switcher -->
+        <button onclick="switchTab('budget')" id="navbarCurrencyBtn" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Change currency">
+          USD ($)
+        </button>
+
+        <!-- AI API Key Settings -->
+        <button onclick="openApiKeyModal()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="AI Settings / API Key">
+          🔑
+        </button>
+
+        <!-- Saved Trips Vault -->
+        <button onclick="openSavedTripsModal()" class="relative p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Saved Trips Vault">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+          <span id="savedTripsCountBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white rounded-full text-[10px] font-bold items-center justify-center">0</span>
+        </button>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button id="themeToggleBtn" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+          <svg class="w-5 h-5 hidden dark:block text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path></svg>
+          <svg class="w-5 h-5 block dark:hidden text-slate-700" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+        </button>
+
+        <!-- Mobile Menu Hamburger -->
+        <button id="mobileMenuToggleBtn" class="lg:hidden p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer Menu -->
+    <div id="mobileNavMenu" class="hidden lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-2 pb-6 space-y-1">
+      <button onclick="switchTab('planner')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Plan Trip</button>
+      <button onclick="switchTab('itinerary')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Itinerary</button>
+      <button onclick="switchTab('flights')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">✈️ Flight Transport</button>
+      <button onclick="switchTab('trains')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">🚆 Train Transport</button>
+      <button onclick="switchTab('buses')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">🚌 Bus Transport</button>
+      <button onclick="switchTab('cars')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">🚗 Car Rentals</button>
+      <button onclick="switchTab('split')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">👥 Split Bill Calculator</button>
+      <button onclick="switchTab('photos')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">📸 Photo Spots & Sunset</button>
+      <button onclick="switchTab('safety')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">🛡️ Safety & Scams</button>
+      <button onclick="switchTab('map')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Route Map</button>
+      <button onclick="switchTab('destinations')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Explore Cities</button>
+      <button onclick="switchTab('budget')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Budget & Currency</button>
+      <button onclick="switchTab('packing')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Packing Checklist</button>
+      <button onclick="switchTab('visa')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Visa & Culture</button>
+      <button onclick="switchTab('booking')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Booking Hub</button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- TAB 1: PLAN TRIP & HERO -->
+    <section id="section-planner" class="app-section space-y-12">
+      <!-- Hero Header -->
+      <div class="text-center max-w-3xl mx-auto pt-6 pb-2">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 mb-4">
+          ✨ Next-Gen AI Travel Architect
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">
+          Design your dream journey with <span class="bg-clip-text text-transparent bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600">Intelligent Precision</span>
+        </h1>
+        <p class="text-slate-600 dark:text-slate-300 text-base sm:text-lg leading-relaxed">
+          Instant multi-day itineraries, interactive route mapping, budget estimation, packing checklists, and local cultural guidance.
+        </p>
+      </div>
+
+      <!-- AI Generator Form Wizard Card -->
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-xl max-w-4xl mx-auto">
+        <form id="aiTripPlannerForm" class="space-y-6">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Destination Input -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Where do you want to go? 📍
+              </label>
+              <div class="relative">
+                <input type="text" id="plannerDestination" value="Tokyo, Japan" placeholder="e.g. Tokyo, Paris, Bali, Rome, New York, Swiss Alps..." class="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-base focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
+                <div class="absolute right-4 top-4 text-slate-400 text-lg">✈️</div>
+              </div>
+              <div class="flex flex-wrap gap-2 mt-2 text-xs">
+                <span class="text-slate-400">Popular:</span>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Tokyo, Japan'" class="text-primary-600 hover:underline">Tokyo</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Paris, France'" class="text-primary-600 hover:underline">Paris</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Bali, Indonesia'" class="text-primary-600 hover:underline">Bali</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Rome, Italy'" class="text-primary-600 hover:underline">Rome</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Dubai, UAE'" class="text-primary-600 hover:underline">Dubai</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Swiss Alps, Switzerland'" class="text-primary-600 hover:underline">Swiss Alps</button>
+              </div>
+            </div>
+
+            <!-- Trip Duration -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Duration (Days) 📅
+              </label>
+              <select id="plannerDuration" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="1">1 Day Express</option>
+                <option value="2">2 Days Weekend</option>
+                <option value="3" selected>3 Days Perfect Getaway</option>
+                <option value="4">4 Days Explorer</option>
+                <option value="5">5 Days Immersive</option>
+                <option value="7">7 Days Complete Week</option>
+                <option value="10">10 Days Grand Tour</option>
+                <option value="14">14 Days Epic Expedition</option>
+              </select>
+            </div>
+
+            <!-- Start Date -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Departure Date 🛫
+              </label>
+              <input type="date" id="plannerStartDate" class="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+
+            <!-- Travelers -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Who is Traveling? 👥
+              </label>
+              <select id="plannerTravelers" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="Solo Traveler">Solo Explorer</option>
+                <option value="Couple" selected>Couple / Romantic</option>
+                <option value="Family with Kids">Family with Kids</option>
+                <option value="Group of Friends">Group of Friends</option>
+              </select>
+            </div>
+
+            <!-- Travel Style -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Travel Style / Vibe 🎯
+              </label>
+              <select id="plannerStyle" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="Culture & Foodie" selected>Culture, History & Foodie</option>
+                <option value="Adventure & Nature">Adventure, Hiking & Nature</option>
+                <option value="Relaxation & Wellness">Relaxation, Beach & Wellness</option>
+                <option value="Luxury & Exclusive">Luxury, Fine Dining & Shopping</option>
+                <option value="Budget Backpacker">Budget Backpacker / Street Food</option>
+              </select>
+            </div>
+
+            <!-- Budget Level -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Budget Tier 💰
+              </label>
+              <select id="plannerBudget" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="Budget ($)">Economy / Budget Friendly ($)</option>
+                <option value="Moderate ($$)" selected>Balanced / Moderate ($$)</option>
+                <option value="Luxury ($$$)">Premium / Luxury ($$$)</option>
+              </select>
+            </div>
+
+            <!-- Pace -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Trip Pace ⏱️
+              </label>
+              <select id="plannerPace" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="Relaxed">Relaxed (1-2 main sights daily)</option>
+                <option value="Balanced" selected>Balanced (3-4 sights & dining)</option>
+                <option value="Packed / Fast">Fast-Paced (Maximum coverage)</option>
+              </select>
+            </div>
+
+            <!-- Custom Preferences -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Special Interests or Requests (Optional) 📝
+              </label>
+              <input type="text" id="plannerInterests" placeholder="e.g. Vegetarian food spots, photography viewpoints, vintage shopping..." class="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-4">
+            <button type="submit" id="generateTripBtn" class="w-full py-4 rounded-2xl bg-gradient-to-r from-primary-600 via-indigo-600 to-primary-700 hover:opacity-95 text-white font-extrabold text-base shadow-xl shadow-primary-600/30 transition transform hover:-translate-y-0.5">
+              ✨ Generate AI Travel Masterplan
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Quick Feature Showcase -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto pt-6">
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+          <div class="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">🗺️</div>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white mb-2">Interactive Route Maps</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">View daily stops linked sequentially on Leaflet maps with walking paths.</p>
+        </div>
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+          <div class="w-12 h-12 bg-purple-50 dark:bg-purple-900/30 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">💰</div>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white mb-2">Smart Budget Intelligence</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Real-time cost estimates and instant multi-currency conversions.</p>
+        </div>
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+          <div class="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">📅</div>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white mb-2">1-Click Calendar Sync</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Directly export your itinerary into Apple, Google, or Outlook Calendar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ITINERARY VIEW -->
+    <section id="section-itinerary" class="app-section hidden">
+      <div id="itineraryContent">
+        <!-- Rendered dynamically via app.js -->
+      </div>
+    </section>
+
+    <!-- TAB: FLIGHTS TRANSPORT -->
+    <section id="section-flights" class="app-section hidden space-y-8">
+      <div id="flightsViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: TRAINS TRANSPORT -->
+    <section id="section-trains" class="app-section hidden space-y-8">
+      <div id="trainsViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: BUSES TRANSPORT -->
+    <section id="section-buses" class="app-section hidden space-y-8">
+      <div id="busesViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: CAR RENTALS -->
+    <section id="section-cars" class="app-section hidden space-y-8">
+      <div id="carsViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: SPLIT BILL CALCULATOR -->
+    <section id="section-split" class="app-section hidden space-y-8">
+      <div id="splitViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: PHOTO SPOTS -->
+    <section id="section-photos" class="app-section hidden space-y-8">
+      <div id="photosViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: SAFETY & SCAMS -->
+    <section id="section-safety" class="app-section hidden space-y-8">
+      <div id="safetyViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB 3: ROUTE MAP -->
+    <section id="section-map" class="app-section hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-3xl font-black text-slate-900 dark:text-white">Interactive Route Map</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Numbered destination pins for daily itinerary stops</p>
+        </div>
+        <!-- Day Selector Buttons -->
+        <div id="mapDaySelector" class="flex flex-wrap gap-2">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-lg h-[550px]">
+        <div id="leafletMapContainer" class="w-full h-full rounded-2xl"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: EXPLORE DESTINATIONS -->
+    <section id="section-destinations" class="app-section hidden space-y-8">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mb-2">Curated Global Destinations</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Select any world city to explore highlights and pre-fill your AI travel masterplan.</p>
+      </div>
+
+      <div id="destinationsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Rendered dynamically from destinations.js -->
+      </div>
+    </section>
+
+    <!-- TAB 5: BUDGET & CURRENCY -->
+    <section id="section-budget" class="app-section hidden space-y-8">
+      <div class="text-center max-w-xl mx-auto">
+        <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-2">Budget & Cost Visualizer</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Real-time expenditure forecasts across accommodations, dining, sights, and transit.</p>
+      </div>
+      <div id="budgetViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB 6: PACKING CHECKLIST -->
+    <section id="section-packing" class="app-section hidden space-y-8">
+      <div id="packingViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB 7: VISA & CULTURE -->
+    <section id="section-visa" class="app-section hidden space-y-8">
+      <div class="text-center max-w-xl mx-auto">
+        <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-2">Visa, Etiquette & Audio Phrasebook</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Key cultural customs, audio pronunciations, and emergency helpline numbers.</p>
+      </div>
+      <div id="visaCultureContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB 8: BOOKING HUB -->
+    <section id="section-booking" class="app-section hidden space-y-8">
+      <div id="bookingViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= FLOATING AI CONCIERGE BUTTON ================= -->
+  <button id="aiChatFloatingBtn" onclick="toggleChatDrawer()" class="no-print fixed bottom-6 right-6 z-40 px-4 py-3 rounded-2xl bg-gradient-to-r from-primary-600 to-indigo-600 text-white font-bold text-sm shadow-2xl shadow-primary-600/40 hover:scale-105 transition-transform flex items-center gap-2.5">
+    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+    🤖 AI Concierge
+  </button>
+
+  <!-- ================= AI CONCIERGE CHAT DRAWER ================= -->
+  <div id="aiChatDrawer" class="no-print hidden fixed bottom-20 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col h-[500px]">
+    <div class="p-4 bg-gradient-to-r from-primary-600 to-indigo-600 text-white flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm">🤖</div>
+        <div>
+          <h4 class="font-bold text-sm">Voyex AI Concierge</h4>
+          <span class="text-[10px] opacity-80">Online • 24/7 Travel Guide</span>
+        </div>
+      </div>
+      <button onclick="toggleChatDrawer()" class="p-1 hover:bg-white/20 rounded-lg text-white">✕</button>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="chatMessagesContainer" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950">
+      <!-- Dynamic messages -->
+    </div>
+
+    <!-- Chat Input Form -->
+    <form id="aiChatForm" class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
+      <input type="text" id="chatInputMessage" placeholder="Ask about food, weather, safety..." class="flex-1 px-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+      <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition">Send</button>
+    </form>
+  </div>
+
+  <!-- ================= EXPORT & SHARE MODAL ================= -->
+  <div id="exportShareModal" class="no-print hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-black text-slate-900 dark:text-white">Export & Share Trip</h3>
+        <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">✕</button>
+      </div>
+
+      <!-- QR Code View -->
+      <div class="text-center">
+        <span class="text-xs font-semibold text-slate-500 block mb-3">Scan with phone camera to open on mobile:</span>
+        <div id="qrCodeContainer" class="py-2"></div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-3 pt-2">
+        <button onclick="downloadCalendarICS()" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-xl transition shadow flex items-center justify-center gap-2">
+          📅 Download .ICS (Apple & Google Calendar)
+        </button>
+        <button onclick="copyShareLink()" class="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm rounded-xl transition flex items-center justify-center gap-2">
+          📋 Copy Shareable Web Link
+        </button>
+        <button onclick="window.print(); closeExportModal();" class="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm rounded-xl transition flex items-center justify-center gap-2">
+          🖨️ Print / Save as PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SAVED TRIPS VAULT MODAL ================= -->
+  <div id="savedTripsModal" class="no-print hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-xl font-black text-slate-900 dark:text-white">Saved Trips Vault</h3>
+          <p class="text-xs text-slate-400">Stored locally in your web browser</p>
+        </div>
+        <button onclick="closeSavedTripsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">✕</button>
+      </div>
+
+      <div id="savedTripsList" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= API KEY MODAL ================= -->
+  <div id="apiKeyModal" class="no-print hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🔑</span>
+          <div>
+            <h3 class="text-lg font-black text-slate-900 dark:text-white">AI Engine Settings</h3>
+            <span class="text-[10px] text-slate-400">Bring Your Own Key (Optional)</span>
+          </div>
+        </div>
+        <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-600 dark:text-slate-300">
+        <p>By default, Voyex AI uses intelligent built-in destination intelligence. You can optionally connect your personal <strong>Google Gemini API Key</strong> for live infinite AI reasoning.</p>
+        
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Google Gemini API Key</label>
+          <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs">
+          <span class="text-[10px] text-slate-400 mt-1 block">Keys are stored locally only in your web browser.</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="saveApiKey()" class="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-xl transition shadow">
+          Save Settings
+        </button>
+        <button onclick="clearApiKey()" class="py-3 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-rose-500 font-bold text-xs rounded-xl transition">
+          Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TOAST NOTIFICATION CONTAINER ================= -->
+  <div id="appToastNotification" class="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white transition-all duration-300 transform translate-y-12 opacity-0 pointer-events-none"></div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-10 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center text-sm font-bold">✈️</div>
+        <div>
+          <span class="font-bold text-slate-900 dark:text-white text-sm">Voyex AI</span>
+          <span class="text-xs text-slate-400 block">World-Class Smart Travel Platform</span>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-6 text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <a href="javascript:void(0)" onclick="switchTab('planner')" class="hover:text-primary-600">Planner</a>
+        <a href="javascript:void(0)" onclick="switchTab('destinations')" class="hover:text-primary-600">Destinations</a>
+        <a href="javascript:void(0)" onclick="switchTab('budget')" class="hover:text-primary-600">Currencies</a>
+        <a href="javascript:void(0)" onclick="switchTab('booking')" class="hover:text-primary-600">Flights & Hotels</a>
+        <a href="javascript:void(0)" onclick="switchTab('visa')" class="hover:text-primary-600">Visa Guide</a>
+      </div>
+
+      <p class="text-xs text-slate-400 text-center md:text-right">
+        &copy; 2026 Voyex AI. Ready for public hosting & custom domain.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Core Scripts -->
+  <script>
+// Comprehensive Global Destinations Database for Voyex AI Travel Website
+const DESTINATIONS = [
+  {
+    id: "tokyo",
+    name: "Tokyo",
+    country: "Japan",
+    tagline: "Ultra-modern neon metropolis meets timeless ancient traditions",
+    continent: "Asia",
+    vibe: ["Culture", "Foodie", "Modern", "Shopping"],
+    budgetLevel: "Moderate to High ($ - $$)",
+    avgDailyCost: 110, // USD
+    bestMonths: "March - May & September - November",
+    currency: "JPY (¥)",
+    language: "Japanese",
+    coordinates: [35.6762, 139.6503],
+    image: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80",
+    description: "From the bustling Shibuya scramble and futuristic Akihabara to the tranquil Meiji Shrine and world-class ramen alleyways, Tokyo offers an unforgettable sensory journey.",
+    highlights: ["Shibuya Crossing & Sky Deck", "Sensō-ji Temple in Asakusa", "TeamLab Borderless Digital Art", "Tsukiji Outer Market Food Tour", "Shinjuku Gyoen National Garden"],
+    visaInfo: {
+      type: "Visa-Free / eVisa for 70+ countries (up to 90 days)",
+      passportValidity: "Valid for duration of stay",
+      adapter: "Type A & B (100V, 50/60Hz)",
+      emergency: { police: "110", ambulance: "119", touristHelp: "+81 3-3201-3331" }
+    },
+    cultureEtiquette: {
+      tipping: "No tipping culture (considered rude/confusing). Exceptional service is always included.",
+      customs: ["Bow slightly when greeting or saying thank you", "Remove shoes when entering homes, ryokans, and traditional restaurants", "Do not eat or drink while walking on busy streets", "Keep voice low on public transit"],
+      phrases: [
+        { en: "Hello", local: "Konnichiwa (こんにちは)", phonetic: "kohn-nee-chee-wah" },
+        { en: "Thank you very much", local: "Arigatou gozaimasu (ありがとうございます)", phonetic: "ah-ree-gah-toh go-zeye-mahs" },
+        { en: "Excuse me / Sorry", local: "Sumimasen (すみません)", phonetic: "soo-mee-mah-sen" },
+        { en: "How much is this?", local: "Kore wa ikura desu ka? (これはいくらですか？)", phonetic: "ko-reh wah ee-koo-rah des kah" },
+        { en: "Where is the bathroom?", local: "Toire wa doko desu ka? (トイレはどこですか？)", phonetic: "toy-reh wah doh-koh des kah" },
+        { en: "Delicious!", local: "Oishii! (美味しい！)", phonetic: "oy-shee" }
+      ]
+    },
+    itineraryDays: [
+      {
+        day: 1,
+        title: "Iconic Tokyo: Neon, Shrines & City Views",
+        activities: [
+          { time: "09:00 AM", category: "Culture", title: "Meiji Shrine & Yoyogi Forest Walk", desc: "Walk through towering cedar gates to Tokyo's grandest Shinto shrine nestled in a tranquil 170-acre forest.", cost: 0, lat: 35.6764, lng: 139.6993, icon: "landmark" },
+          { time: "12:30 PM", category: "Food", title: "Harajuku Takeshita Street & Crepes", desc: "Sample trendy Japanese street snacks, Harajuku sweet crepes, and explore vibrant youth fashion boutiques.", cost: 15, lat: 35.6715, lng: 139.7032, icon: "utensils" },
+          { time: "03:30 PM", category: "Sightseeing", title: "Shibuya Crossing & Hachiko Statue", desc: "Experience the world's busiest pedestrian crossing and pay tribute to Japan's most loyal canine.", cost: 0, lat: 35.6595, lng: 139.7005, icon: "camera" },
+          { time: "06:30 PM", category: "Sunset / Views", title: "Shibuya Sky Observation Deck", desc: "360-degree open-air panoramic sunset view over Tokyo with glimpses of Mount Fuji on clear days.", cost: 18, lat: 35.6585, lng: 139.7022, icon: "eye" },
+          { time: "08:30 PM", category: "Dining & Nightlife", title: "Omoide Yokocho (Memory Lane) Yakitori", desc: "Authentic dinner in a cozy lantern-lit post-war alleyway serving grilled chicken skewers and cold draft beer.", cost: 25, lat: 35.6931, lng: 139.6998, icon: "glass" }
+        ]
+      },
+      {
+        day: 2,
+        title: "Historic Asakusa & Futuristic Digital Realms",
+        activities: [
+          { time: "08:30 AM", category: "Culture", title: "Sensō-ji Temple & Nakamise Dori", desc: "Tokyo's oldest Buddhist temple founded in 645 AD. Browse traditional folding fans and freshly made senbei rice crackers.", cost: 0, lat: 35.7148, lng: 139.7967, icon: "landmark" },
+          { time: "12:00 PM", category: "Food", title: "Tsukiji Outer Market Seafood Feast", desc: "Taste fresh nigiri sushi, tamagoyaki (rolled omelet), and wagyu beef skewers from local master vendors.", cost: 30, lat: 35.6655, lng: 139.7708, icon: "utensils" },
+          { time: "03:00 PM", category: "Experience", title: "teamLab Planets / Borderless Digital Art", desc: "Immerse in breathtaking multi-sensory crystal light installations, water gardens, and infinity mirrors.", cost: 28, lat: 35.6493, lng: 139.7898, icon: "sparkles" },
+          { time: "07:00 PM", category: "Dining", title: "Ginza Luxury Ramen & Cocktail Lounge", desc: "Michelin-recommended truffle shoyu ramen followed by crafted bespoke cocktails at an intimate Ginza speakeasy.", cost: 35, lat: 35.6719, lng: 139.7640, icon: "utensils" }
+        ]
+      },
+      {
+        day: 3,
+        title: "Pop Culture, Anime & Panoramic Skyline",
+        activities: [
+          { time: "09:30 AM", category: "Shopping", title: "Akihabara Electric Town & Retro Games", desc: "Explore multi-level arcades, vintage gaming stores (Super Potato), and anime figure galleries.", cost: 10, lat: 35.6983, lng: 139.7730, icon: "shopping-bag" },
+          { time: "01:00 PM", category: "Culture", title: "Ueno Park & Tokyo National Museum", desc: "Stroll through tranquil ponds and view ancient samurai armor, swords, and ukiyo-e woodblock prints.", cost: 8, lat: 35.7188, lng: 139.7765, icon: "landmark" },
+          { time: "05:00 PM", category: "Sightseeing", title: "Tokyo Skytree Golden Hour", desc: "Ascend to 450 meters above ground in one of the world's tallest towers for an endless sunset city panorama.", cost: 22, lat: 35.7100, lng: 139.8107, icon: "camera" },
+          { time: "08:00 PM", category: "Dining", title: "Shinjuku Golden Gai Micro-Bars", desc: "Explore 200 tiny bars packed into 6 narrow alleyways, each with unique themes and cozy atmospheres.", cost: 30, lat: 35.6943, lng: 139.7046, icon: "glass" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "paris",
+    name: "Paris",
+    country: "France",
+    tagline: "The City of Light, romance, world-class art, and culinary perfection",
+    continent: "Europe",
+    vibe: ["Romantic", "Culture", "Foodie", "Architecture"],
+    budgetLevel: "High ($$)",
+    avgDailyCost: 140,
+    bestMonths: "April - June & September - November",
+    currency: "EUR (€)",
+    language: "French",
+    coordinates: [48.8566, 2.3522],
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80",
+    description: "From the majesty of the Eiffel Tower and masterpieces in the Louvre to bohemian cobblestones in Montmartre, Paris is a timeless dream for every traveler.",
+    highlights: ["Eiffel Tower & Champ de Mars", "Louvre Museum & Mona Lisa", "Montmartre & Sacré-Cœur", "Seine River Sunset Cruise", "Palace of Versailles"],
+    visaInfo: {
+      type: "Schengen Visa (Visa-Free for 90 days for 60+ countries)",
+      passportValidity: "Must have at least 3 months validity beyond intended stay",
+      adapter: "Type C & E (230V, 50Hz)",
+      emergency: { police: "17", ambulance: "15", touristHelp: "112" }
+    },
+    cultureEtiquette: {
+      tipping: "Service compris is included by law. Leaving 5-10% extra for great service is customary.",
+      customs: ["Always greet shopkeepers and servers with 'Bonjour'", "Dress smart casual", "Keep voices moderate in cafés and restaurants"],
+      phrases: [
+        { en: "Hello / Good day", local: "Bonjour", phonetic: "bon-zhoor" },
+        { en: "Thank you very much", local: "Merci beaucoup", phonetic: "mair-see boh-koo" },
+        { en: "Please", local: "S'il vous plaît", phonetic: "seel voo pleh" },
+        { en: "Where is the Eiffel Tower?", local: "Où est la tour Eiffel?", phonetic: "oo eh lah toor ay-fel" },
+        { en: "The check, please", local: "L'addition, s'il vous plaît", phonetic: "lah-dee-syon seel voo pleh" }
+      ]
+    },
+    itineraryDays: [
+      {
+        day: 1,
+        title: "Heart of Paris: Icons, Seine & Sunset Sparkles",
+        activities: [
+          { time: "09:00 AM", category: "Culture", title: "Louvre Museum & Tuileries Gardens", desc: "Marvel at Da Vinci's Mona Lisa and Winged Victory of Samothrace.", cost: 22, lat: 48.8606, lng: 2.3376, icon: "landmark" },
+          { time: "01:00 PM", category: "Food", title: "Classic Parisian Bistro Lunch in Saint-Germain", desc: "Indulge in French onion soup and croque monsieur at a vintage terrace.", cost: 28, lat: 48.8538, lng: 2.3333, icon: "utensils" },
+          { time: "03:30 PM", category: "Sightseeing", title: "Notre-Dame Cathedral & Île de la Cité", desc: "Admire gothic architecture and walk along vintage riverside bookstalls.", cost: 0, lat: 48.8530, lng: 2.3499, icon: "landmark" },
+          { time: "06:30 PM", category: "Experience", title: "Seine River Twilight Cruise", desc: "Glide past illuminated monuments and historic bridges.", cost: 16, lat: 48.8584, lng: 2.2945, icon: "sparkles" },
+          { time: "08:30 PM", category: "Sunset / Views", title: "Eiffel Tower Light Show & Champ de Mars", desc: "Watch the Eiffel Tower sparkle with 20,000 bulbs at night.", cost: 0, lat: 48.8584, lng: 2.2945, icon: "camera" }
+        ]
+      },
+      {
+        day: 2,
+        title: "Bohemian Montmartre, Le Marais & Arc de Triomphe",
+        activities: [
+          { time: "09:30 AM", category: "Culture", title: "Sacré-Cœur Basilica & Artists' Square", desc: "Climb the hill of Montmartre for sweeping views over Paris.", cost: 0, lat: 48.8867, lng: 2.3431, icon: "landmark" },
+          { time: "12:30 PM", category: "Food", title: "Gourmet Pastries & Café in Le Marais", desc: "Sample artisanal pastries and Parisian café delicacies.", cost: 18, lat: 48.8575, lng: 2.3622, icon: "utensils" },
+          { time: "03:00 PM", category: "Culture", title: "Musée d'Orsay Impressionist Masterpieces", desc: "Works by Monet, Van Gogh, Renoir inside a grand Beaux-Arts railway station.", cost: 16, lat: 48.8599, lng: 2.3266, icon: "camera" },
+          { time: "06:30 PM", category: "Sightseeing", title: "Arc de Triomphe Rooftop Sunset", desc: "Panoramic sunset views of twelve grand avenues radiating outwards.", cost: 14, lat: 48.8738, lng: 2.2950, icon: "eye" },
+          { time: "08:30 PM", category: "Dining", title: "Wine & French Gastronomy Dinner", desc: "Sample regional cheeses and Bordeaux wines in a cozy bistro.", cost: 38, lat: 48.8640, lng: 2.3450, icon: "glass" }
+        ]
+      },
+      {
+        day: 3,
+        title: "Palace Splendor & Secret Covered Passages",
+        activities: [
+          { time: "08:30 AM", category: "Culture", title: "Palace of Versailles & Royal Gardens", desc: "Tour the famous Hall of Mirrors and fountain gardens.", cost: 30, lat: 48.8049, lng: 2.1204, icon: "landmark" },
+          { time: "02:30 PM", category: "Shopping", title: "Galeries Lafayette Rooftop View", desc: "Admire the stained-glass dome and take in rooftop skyline views.", cost: 0, lat: 48.8738, lng: 2.3320, icon: "shopping-bag" },
+          { time: "07:30 PM", category: "Dining & Nightlife", title: "Latin Quarter Jazz & Bistro Evening", desc: "Live jazz music with fine dining in Paris's historic quarter.", cost: 45, lat: 48.8841, lng: 2.3323, icon: "sparkles" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "bali",
+    name: "Bali",
+    country: "Indonesia",
+    tagline: "Tropical paradise of lush jungle cascades, sacred temples, and golden beaches",
+    continent: "Asia",
+    vibe: ["Nature", "Relaxation", "Adventure", "Culture"],
+    budgetLevel: "Budget to Moderate ($ - $)",
+    avgDailyCost: 55,
+    bestMonths: "April - October (Dry season)",
+    currency: "IDR (Rp)",
+    language: "Indonesian & Balinese",
+    coordinates: [-8.4095, 115.1889],
+    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80",
+    description: "From tranquil sunrise yoga above rice terraces in Ubud to surf breaks in Uluwatu and sacred water temples, Bali rejuvenates body and soul.",
+    highlights: ["Tegallalang Rice Terraces", "Uluwatu Cliffside Temple & Kecak Dance", "Mount Batur Sunrise Volcano Trek", "Tirta Empul Holy Water Temple", "Nusa Penida Day Trip"],
+    visaInfo: {
+      type: "Visa on Arrival (VoA) / e-VoA for 90+ countries (30 days)",
+      passportValidity: "Must have at least 6 months validity from entry date",
+      adapter: "Type C & F (230V, 50Hz)",
+      emergency: { police: "110 / 112", ambulance: "118", touristHelp: "+62 361 224608" }
+    },
+    cultureEtiquette: {
+      tipping: "5-10% tipping in restaurants and small tips for drivers is warmly appreciated.",
+      customs: ["Wear a sarong and sash when entering temples", "Never step on Canang Sari flower offerings", "Use your right hand for giving and receiving"],
+      phrases: [
+        { en: "Hello", local: "Om Swastiastu / Halo", phonetic: "ohm swas-tee-ahs-too" },
+        { en: "Thank you", local: "Terima kasih / Suksema", phonetic: "t'ree-mah kah-see" },
+        { en: "How much is this?", local: "Berapa harganya?", phonetic: "b'rah-pah har-gah-nyah" }
+      ]
+    },
+    itineraryDays: [
+      {
+        day: 1,
+        title: "Spiritual Ubud: Rice Terraces & Holy Water",
+        activities: [
+          { time: "07:30 AM", category: "Nature", title: "Tegallalang Rice Terrace Sunrise Walk", desc: "Stroll emerald green stepped paddies bathed in morning golden light.", cost: 4, lat: -8.4357, lng: 115.2796, icon: "sparkles" },
+          { time: "11:00 AM", category: "Culture", title: "Tirta Empul Sacred Water Purification", desc: "Participate in the ancient Balinese cleansing spring ritual.", cost: 6, lat: -8.4150, lng: 115.3150, icon: "landmark" },
+          { time: "01:30 PM", category: "Food", title: "Organic Warung Feast in Ubud", desc: "Taste authentic Nasi Campur and dragonfruit smoothie bowls.", cost: 9, lat: -8.5069, lng: 115.2625, icon: "utensils" },
+          { time: "03:30 PM", category: "Nature", title: "Sacred Monkey Forest Sanctuary", desc: "Wander among moss-covered temples and playful long-tailed macaques.", cost: 7, lat: -8.5188, lng: 115.2588, icon: "camera" },
+          { time: "07:00 PM", category: "Relaxation", title: "Traditional Balinese Herbal Spa", desc: "Unwind with authentic flower bath and deep-tissue massage.", cost: 18, lat: -8.5080, lng: 115.2640, icon: "sparkles" }
+        ]
+      },
+      {
+        day: 2,
+        title: "Volcano Trek & Hidden Cascades",
+        activities: [
+          { time: "03:00 AM", category: "Adventure", title: "Mount Batur Sunrise Volcano Hike", desc: "Hike up an active volcano to watch pastel dawn colors over Lake Batur.", cost: 35, lat: -8.2424, lng: 115.3755, icon: "compass" },
+          { time: "10:30 AM", category: "Nature", title: "Tibumana & Kanto Lampo Waterfalls", desc: "Swim in crystal jungle pools surrounded by hanging vines.", cost: 4, lat: -8.5034, lng: 115.3340, icon: "sparkles" },
+          { time: "07:00 PM", category: "Dining", title: "Campuhan Ridge Twilight & Fine Dining", desc: "Scenic ridge walk at sunset followed by gourmet Indonesian dining.", cost: 22, lat: -8.5020, lng: 115.2540, icon: "utensils" }
+        ]
+      },
+      {
+        day: 3,
+        title: "South Bali Cliffs & Kecak Sunset Dance",
+        activities: [
+          { time: "09:30 AM", category: "Relaxation", title: "Padang Padang & Dreamland Beach", desc: "Sunbathe and swim in turquoise waters beside limestone cliffs.", cost: 2, lat: -8.8111, lng: 115.1039, icon: "sun" },
+          { time: "05:00 PM", category: "Culture", title: "Uluwatu Temple & Sunset Kecak Fire Dance", desc: "Watch 50 chanting dancers against a dramatic ocean sunset.", cost: 12, lat: -8.8291, lng: 115.0849, icon: "landmark" },
+          { time: "08:00 PM", category: "Dining", title: "Jimbaran Bay Candlelit Beach BBQ", desc: "Grilled fresh snapper and king prawns right on the sand.", cost: 25, lat: -8.7700, lng: 115.1667, icon: "glass" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "rome",
+    name: "Rome",
+    country: "Italy",
+    tagline: "The Eternal City of gladiators, Renaissance art, espresso, and culinary passion",
+    continent: "Europe",
+    vibe: ["Culture", "History", "Foodie", "Architecture"],
+    budgetLevel: "Moderate to High ($ - $$)",
+    avgDailyCost: 120,
+    bestMonths: "April - June & September - October",
+    currency: "EUR (€)",
+    language: "Italian",
+    coordinates: [41.9028, 12.4964],
+    image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1200&q=80",
+    description: "Walk in the footsteps of emperors at the Colosseum, toss a coin into Trevi Fountain, and savor creamy cacio e pepe in charming Trastevere.",
+    highlights: ["Colosseum & Roman Forum", "Vatican Museums & Sistine Chapel", "Pantheon & Piazza Navona", "Trevi Fountain & Spanish Steps", "Trastevere Food Walk"],
+    visaInfo: {
+      type: "Schengen Visa (Visa-Free for 90 days for 60+ countries)",
+      passportValidity: "At least 3 months after scheduled departure date",
+      adapter: "Type C, F & L (230V, 50Hz)",
+      emergency: { police: "113 / 112", ambulance: "118", touristHelp: "060608" }
+    },
+    cultureEtiquette: {
+      tipping: "Tipping is not required (coperto fee included). Rounding up is courteous.",
+      customs: ["Cappuccino in the morning only; order espresso after 11:00 AM", "Cover shoulders and knees in churches", "Do not cut pasta with a knife"],
+      phrases: [
+        { en: "Hello", local: "Ciao / Buongiorno", phonetic: "chow / bwon-zhor-no" },
+        { en: "Thank you very much", local: "Grazie mille", phonetic: "grah-tsee-eh meel-leh" },
+        { en: "The bill, please", local: "Il conto, per favore", phonetic: "eel kohn-toh pehr fah-voh-reh" }
+      ]
+    },
+    itineraryDays: [
+      {
+        day: 1,
+        title: "Ancient Rome: Colosseum & Imperial Forum",
+        activities: [
+          { time: "09:00 AM", category: "Culture", title: "Colosseum Arena Floor & Underground", desc: "Stand where gladiators fought 2,000 years ago.", cost: 24, lat: 41.8902, lng: 12.4922, icon: "landmark" },
+          { time: "12:00 PM", category: "History", title: "Roman Forum & Palatine Hill", desc: "Stroll through the political hub of the Roman Empire.", cost: 0, lat: 41.8925, lng: 12.4853, icon: "landmark" },
+          { time: "02:00 PM", category: "Food", title: "Traditional Carbonara in Monti", desc: "Feast on authentic Carbonara and crispy supplì.", cost: 20, lat: 41.8947, lng: 12.4938, icon: "utensils" },
+          { time: "08:00 PM", category: "Dining", title: "Trastevere Trattoria Dinner", desc: "Sip house Chianti while enjoying homemade lasagna on cobblestones.", cost: 30, lat: 41.8890, lng: 12.4700, icon: "glass" }
+        ]
+      },
+      {
+        day: 2,
+        title: "Vatican Treasures & Baroque Piazzas",
+        activities: [
+          { time: "08:30 AM", category: "Culture", title: "Vatican Museums & Sistine Chapel", desc: "Gaze up at Michelangelo's ceiling frescoes.", cost: 28, lat: 41.9065, lng: 12.4534, icon: "landmark" },
+          { time: "12:00 PM", category: "Culture", title: "St. Peter's Basilica & Dome", desc: "Climb the dome for 360-degree views of Rome.", cost: 10, lat: 41.9022, lng: 12.4568, icon: "eye" },
+          { time: "08:00 PM", category: "Dining", title: "Piazza Navona Aperitivo", desc: "Aperol Spritz beside Bernini's Fountain of the Four Rivers.", cost: 22, lat: 41.8992, lng: 12.4731, icon: "glass" }
+        ]
+      },
+      {
+        day: 3,
+        title: "Pantheon, Trevi Fountain & Spanish Steps",
+        activities: [
+          { time: "09:00 AM", category: "History", title: "The Pantheon's Historic Oculus", desc: "Step inside the best-preserved ancient Roman dome.", cost: 5, lat: 41.8986, lng: 12.4769, icon: "landmark" },
+          { time: "11:30 AM", category: "Sightseeing", title: "Trevi Fountain Coin Toss", desc: "Toss a coin over your left shoulder to ensure your return.", cost: 0, lat: 41.9009, lng: 12.4833, icon: "camera" },
+          { time: "01:00 PM", category: "Food", title: "Gourmet Gelato at Giolitti", desc: "Taste creamy pistachio and dark chocolate gelato.", cost: 6, lat: 41.9006, lng: 12.4782, icon: "utensils" },
+          { time: "06:30 PM", category: "Sunset / Views", title: "Pincio Terrace Sunset at Villa Borghese", desc: "Romantic hilltop sunset overlooking Rome.", cost: 0, lat: 41.9114, lng: 12.4795, icon: "eye" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "dubai",
+    name: "Dubai",
+    country: "United Arab Emirates",
+    tagline: "Futuristic city of world records, luxury shopping, and golden desert dunes",
+    continent: "Middle East",
+    vibe: ["Luxury", "Modern", "Adventure", "Shopping"],
+    budgetLevel: "High to Ultra-Luxury ($$ - $$)",
+    avgDailyCost: 160,
+    bestMonths: "November - March",
+    currency: "AED (د.إ)",
+    language: "Arabic & English",
+    coordinates: [25.2048, 55.2708],
+    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80",
+    description: "Experience the world's tallest tower, ski inside a desert mall, race over Arabian sand dunes, and dine in futuristic waterfront restaurants.",
+    highlights: ["Burj Khalifa 148th Floor", "Dubai Fountain & Dubai Mall", "Desert Safari with Dune Bashing & BBQ", "Museum of the Future", "Palm Jumeirah & Atlantis"],
+    visaInfo: {
+      type: "Visa-Free / Visa on Arrival for 70+ nationalities (30-90 days)",
+      passportValidity: "At least 6 months validity from date of entry",
+      adapter: "Type G (230V, 50Hz)",
+      emergency: { police: "999", ambulance: "998", touristHelp: "800 4888" }
+    },
+    cultureEtiquette: {
+      tipping: "10-15% tipping is standard in restaurants and for taxi drivers.",
+      customs: ["Dress respectfully in public malls and government areas", "Public displays of affection should be kept minimal", "Ask permission before photographing local residents"],
+      phrases: [
+        { en: "Hello", local: "Marhaba / Salam", phonetic: "mar-hah-bah" },
+        { en: "Thank you", local: "Shukran", phonetic: "shook-rahn" },
+        { en: "Welcome", local: "Ahlan wa Sahlan", phonetic: "ah-lahn wah sah-lahn" }
+      ]
+    },
+    itineraryDays: [
+      {
+        day: 1,
+        title: "Burj Khalifa, Dubai Mall & Fountain Show",
+        activities: [
+          { time: "09:30 AM", category: "Culture", title: "Museum of the Future", desc: "Step into futuristic exhibitions on space, AI, and bio-tech.", cost: 38, lat: 25.2255, lng: 55.2818, icon: "sparkles" },
+          { time: "01:00 PM", category: "Shopping", title: "Dubai Mall & Giant Aquarium", desc: "Shop world brands and gaze at 33,000 marine animals.", cost: 25, lat: 25.1972, lng: 55.2797, icon: "shopping-bag" },
+          { time: "04:30 PM", category: "Sunset / Views", title: "Burj Khalifa Observation Deck", desc: "Golden sunset over the desert skyline from the world's tallest tower.", cost: 45, lat: 25.1972, lng: 55.2744, icon: "eye" },
+          { time: "07:30 PM", category: "Experience", title: "Dubai Fountain Dancing Water Show", desc: "Watch illuminated water jets dance across Burj Lake.", cost: 0, lat: 25.1953, lng: 25.2767, icon: "camera" }
+        ]
+      },
+      {
+        day: 2,
+        title: "Arabian Desert Safari & Bedouin BBQ Camp",
+        activities: [
+          { time: "09:30 AM", category: "Culture", title: "Old Dubai, Gold & Spice Souks", desc: "Ride an Abra boat across Dubai Creek and explore spice markets.", cost: 5, lat: 25.2680, lng: 55.2970, icon: "landmark" },
+          { time: "03:00 PM", category: "Adventure", title: "4x4 Desert Dune Bashing & Sandboarding", desc: "Exciting roller coaster ride over red sand dunes.", cost: 55, lat: 24.9500, lng: 55.6000, icon: "compass" },
+          { time: "07:30 PM", category: "Dining", title: "Desert Camp BBQ Feast & Fire Show", desc: "Under the stars with grilled meats and fire dancers.", cost: 0, lat: 24.9550, lng: 55.6050, icon: "utensils" }
+        ]
+      },
+      {
+        day: 3,
+        title: "The Palm, Atlantis & Marina Sunset Yacht",
+        activities: [
+          { time: "10:00 AM", category: "Sightseeing", title: "The View at The Palm 360 Observatory", desc: "Gaze over the world-famous man-made palm island.", cost: 28, lat: 25.1147, lng: 55.1408, icon: "eye" },
+          { time: "05:30 PM", category: "Experience", title: "Dubai Marina Sunset Yacht Cruise", desc: "Sail past Ain Dubai and the illuminated marina skyscrapers.", cost: 40, lat: 25.0784, lng: 55.1384, icon: "compass" },
+          { time: "08:30 PM", category: "Dining", title: "Pier 7 Marina Gourmet Dinner", desc: "Waterfront dining overlooking thousands of glittering yachts.", cost: 50, lat: 25.0770, lng: 55.1400, icon: "glass" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "newyork",
+    name: "New York City",
+    country: "United States",
+    tagline: "The buzzing global capital of art, Broadway, towering skylines, and endless energy",
+    continent: "North America",
+    vibe: ["Modern", "Culture", "Foodie", "Shopping"],
+    budgetLevel: "High to Ultra-High ($$ - $$)",
+    avgDailyCost: 175,
+    bestMonths: "April - June & September - November",
+    currency: "USD ($)",
+    language: "English",
+    coordinates: [40.7128, -74.0060],
+    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=1200&q=80",
+    description: "From morning strolls through Central Park to sunset at Summit One Vanderbilt and midnight slices of pizza, NYC is electric 24/7.",
+    highlights: ["Times Square & Broadway Show", "Central Park & The Met Museum", "Statue of Liberty & Ferry", "Summit One Vanderbilt", "Brooklyn Bridge Sunset Walk"],
+    visaInfo: {
+      type: "ESTA (Visa Waiver for 40+ countries) or US B1/B2 Visa",
+      passportValidity: "Valid for at least 6 months beyond stay",
+      adapter: "Type A & B (120V, 60Hz)",
+      emergency: { police: "911", ambulance: "911", touristHelp: "311" }
+    },
+    cultureEtiquette: {
+      tipping: "18-22% tipping is standard in all sit-down restaurants and bars.",
+      customs: ["Walk with purpose and keep sidewalk flow", "Stand on right of subway escalators"],
+      phrases: [
+        { en: "How you doing?", local: "How ya doing? / What's up?", phonetic: "how-yah doo-ing" },
+        { en: "Regular slice of pizza", local: "Plain cheese slice to go", phonetic: "pleyn slyce" }
+      ]
+    },
+    itineraryDays: [
+      {
+        day: 1,
+        title: "Central Park, The Met & Broadway Lights",
+        activities: [
+          { time: "09:00 AM", category: "Nature", title: "Central Park Walk & Bow Bridge", desc: "Walk through leafy avenues and see Bethesda Fountain.", cost: 0, lat: 40.7738, lng: -73.9708, icon: "sun" },
+          { time: "12:00 PM", category: "Culture", title: "The Metropolitan Museum of Art (The Met)", desc: "Wander through Temple of Dendur and master paintings.", cost: 30, lat: 40.7794, lng: -73.9632, icon: "landmark" },
+          { time: "06:30 PM", category: "Sunset / Views", title: "SUMMIT One Vanderbilt Mirrors", desc: "Mirror observation deck with mind-bending skyline views.", cost: 42, lat: 40.7527, lng: -73.9772, icon: "eye" },
+          { time: "08:30 PM", category: "Experience", title: "Broadway Musical in Theatre District", desc: "Catch an iconic Broadway production in Times Square.", cost: 95, lat: 40.7580, lng: -73.9855, icon: "sparkles" }
+        ]
+      },
+      {
+        day: 2,
+        title: "High Line, Soho & Brooklyn Bridge",
+        activities: [
+          { time: "09:30 AM", category: "Sightseeing", title: "The High Line Elevated Park", desc: "Lush linear park built on historic elevated freight rails.", cost: 0, lat: 40.7480, lng: -74.0048, icon: "sun" },
+          { time: "12:30 PM", category: "Food", title: "Chelsea Market Gourmet Bites", desc: "Sample fresh lobster rolls and street tacos.", cost: 25, lat: 40.7424, lng: -74.0061, icon: "utensils" },
+          { time: "06:00 PM", category: "Sunset / Views", title: "Brooklyn Bridge Sunset Walk to DUMBO", desc: "Cross the 1883 bridge with skyline sunset views.", cost: 0, lat: 40.7061, lng: -73.9969, icon: "camera" }
+        ]
+      },
+      {
+        day: 3,
+        title: "Statue of Liberty & Financial District",
+        activities: [
+          { time: "09:00 AM", category: "Culture", title: "Statue of Liberty & Ellis Island", desc: "Ferry ride to Lady Liberty and historic museum.", cost: 25, lat: 40.6892, lng: -74.0445, icon: "landmark" },
+          { time: "03:30 PM", category: "History", title: "9/11 Memorial Reflecting Pools & The Oculus", desc: "Cascading waterfall pools and soaring transit hub.", cost: 0, lat: 40.7115, lng: -74.0132, icon: "camera" },
+          { time: "07:30 PM", category: "Dining", title: "Greenwich Village Speakeasy & Live Music", desc: "Bespoke cocktails and jazz in historic village.", cost: 35, lat: 40.7300, lng: -74.0000, icon: "sparkles" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "switzerland",
+    name: "Swiss Alps",
+    country: "Switzerland",
+    tagline: "Majestic snow-capped peaks, crystal turquoise lakes, and fairy-tale alpine villages",
+    continent: "Europe",
+    vibe: ["Nature", "Adventure", "Romantic", "Relaxation"],
+    budgetLevel: "Ultra-High ($$)",
+    avgDailyCost: 190,
+    bestMonths: "June - September & December - March",
+    currency: "CHF (Fr.)",
+    language: "German & French",
+    coordinates: [46.6863, 7.8632],
+    image: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=1200&q=80",
+    description: "Take panoramic trains to the Top of Europe, ride cable cars beneath the Matterhorn, and savor Swiss fondue in wooden chalets.",
+    highlights: ["Jungfraujoch - Top of Europe", "Matterhorn & Gornergrat Train", "Lauterbrunnen Valley of 72 Waterfalls", "Grindelwald First Cliff Walk", "Lake Brienz Cruise"],
+    visaInfo: {
+      type: "Schengen Visa (Visa-Free for 90 days for 60+ countries)",
+      passportValidity: "At least 3 months validity beyond stay",
+      adapter: "Type J & C (230V, 50Hz)",
+      emergency: { police: "117", ambulance: "144", rescue: "1414" }
+    },
+    cultureEtiquette: {
+      tipping: "Service is included; rounding up to nearest 5 or 10 CHF is customary.",
+      customs: ["Punctuality is sacred", "Pristine environmental cleanliness"],
+      phrases: [
+        { en: "Hello", local: "Grüezi / Bonjour", phonetic: "grew-eht-see" },
+        { en: "Thank you", local: "Merci vilmal / Danke", phonetic: "mair-see feel-mahl" }
+      ]
+    },
+    itineraryDays: [
+      {
+        day: 1,
+        title: "Lauterbrunnen Waterfalls & Grindelwald First",
+        activities: [
+          { time: "09:00 AM", category: "Nature", title: "Lauterbrunnen Valley & Staubbach Falls", desc: "Walk beneath 300m rock faces and roaring falls.", cost: 0, lat: 46.5935, lng: 7.9090, icon: "sun" },
+          { time: "12:00 PM", category: "Food", title: "Alpine Cheese Fondue in Wooden Chalet", desc: "Dip crusty bread into bubbling Gruyère cheese.", cost: 32, lat: 46.6240, lng: 7.9200, icon: "utensils" },
+          { time: "02:30 PM", category: "Adventure", title: "Grindelwald First Cliff Walk", desc: "Suspended bridge along sheer cliffs with 1,000m drops.", cost: 36, lat: 46.6610, lng: 8.0530, icon: "compass" }
+        ]
+      },
+      {
+        day: 2,
+        title: "Jungfraujoch: Top of Europe Glacier Experience",
+        activities: [
+          { time: "08:30 AM", category: "Experience", title: "Eiger Express & Jungfrau Railway (3,454m)", desc: "Europe's highest railway station into the heart of glaciers.", cost: 140, lat: 46.5475, lng: 7.9822, icon: "compass" },
+          { time: "11:30 AM", category: "Nature", title: "Aletsch Glacier Ice Palace Walk", desc: "Blue ice tunnels sculpted inside the longest glacier in Alps.", cost: 0, lat: 46.5475, lng: 7.9822, icon: "sparkles" }
+        ]
+      },
+      {
+        day: 3,
+        title: "Matterhorn Magic in Zermatt",
+        activities: [
+          { time: "09:00 AM", category: "Experience", title: "Gornergrat Cogwheel Train Viewpoint", desc: "View 29 peaks exceeding 4,000 meters facing the Matterhorn.", cost: 85, lat: 45.9840, lng: 7.7830, icon: "eye" },
+          { time: "01:00 PM", category: "Nature", title: "Riffelsee Lake Mirror Reflection", desc: "Hike to the lake capturing the Matterhorn reflection.", cost: 0, lat: 45.9830, lng: 7.7650, icon: "camera" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "london",
+    name: "London",
+    country: "United Kingdom",
+    tagline: "Historic royal landmarks, West End theatre, world-class museums, and lively pub culture",
+    continent: "Europe",
+    vibe: ["Culture", "History", "Shopping", "Foodie"],
+    budgetLevel: "High ($$)",
+    avgDailyCost: 150,
+    bestMonths: "May - September",
+    currency: "GBP (£)",
+    language: "English",
+    coordinates: [51.5074, -0.1278],
+    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=80",
+    description: "Watch the Changing of the Guard at Buckingham Palace, see Big Ben glow beside the Thames, and explore free world-leading museums.",
+    highlights: ["Tower of London & Tower Bridge", "Big Ben & Westminster Abbey", "British Museum", "Buckingham Palace", "West End Show"],
+    visaInfo: {
+      type: "UK ETA / Standard Visitor Visa (Visa-free 6 months for US/EU)",
+      passportValidity: "Valid for duration of stay",
+      adapter: "Type G (230V, 50Hz)",
+      emergency: { police: "999 / 112", ambulance: "999", touristHelp: "101" }
+    },
+    cultureEtiquette: {
+      tipping: "10-12.5% service charge is standard in restaurants. No tip needed at pub bars.",
+      customs: ["Stand on the right on Tube escalators", "Always queue politely"],
+      phrases: [
+        { en: "Cheers / Thank you", local: "Cheers mate!", phonetic: "cheerz mayt" },
+        { en: "Mind the gap", local: "Mind the gap", phonetic: "mynd thuh gap" }
+      ]
+    },
+    itineraryDays: [
+      {
+        day: 1,
+        title: "Royal Westminster & Thames River Highlights",
+        activities: [
+          { time: "09:30 AM", category: "Culture", title: "Big Ben & Westminster Abbey", desc: "Coronation church of kings and the world's most famous clock.", cost: 27, lat: 51.4994, lng: -0.1274, icon: "landmark" },
+          { time: "11:30 AM", category: "Sightseeing", title: "Buckingham Palace Changing of the Guard", desc: "Iconic precision royal pageantry in red tunics.", cost: 0, lat: 51.5014, lng: -0.1419, icon: "landmark" },
+          { time: "04:30 PM", category: "Sunset / Views", title: "The London Eye Sunset Flight", desc: "Glass capsule flight 135 meters above the Thames.", cost: 35, lat: 51.5033, lng: -0.1195, icon: "eye" },
+          { time: "07:30 PM", category: "Experience", title: "West End Musical Performance", desc: "World-class performing arts in London's theatre district.", cost: 65, lat: 51.5120, lng: -0.1300, icon: "sparkles" }
+        ]
+      },
+      {
+        day: 2,
+        title: "Tower of London, Borough Market & Tate Modern",
+        activities: [
+          { time: "09:00 AM", category: "History", title: "Tower of London & Crown Jewels", desc: "Dazzling 23,000-gem royal jewels and 1,000 years of history.", cost: 33, lat: 51.5081, lng: -0.0759, icon: "landmark" },
+          { time: "01:15 PM", category: "Food", title: "Borough Market Gourmet Food Hall", desc: "Taste artisan cheeses, warm pastries, and street delicacies.", cost: 20, lat: 51.5055, lng: -0.0908, icon: "utensils" },
+          { time: "03:30 PM", category: "Culture", title: "Tate Modern & Millennium Bridge", desc: "Modern masterpieces by Picasso and Warhol overlooking St. Paul's.", cost: 0, lat: 51.5076, lng: -0.0994, icon: "landmark" }
+        ]
+      },
+      {
+        day: 3,
+        title: "British Museum & Hyde Park",
+        activities: [
+          { time: "09:30 AM", category: "Culture", title: "The British Museum (Rosetta Stone)", desc: "Egyptian mummies and Parthenon sculptures (Free entry).", cost: 0, lat: 51.5194, lng: -0.1270, icon: "landmark" },
+          { time: "01:00 PM", category: "Food", title: "Traditional Afternoon Tea & Scones", desc: "Warm scones with clotted cream and fine Darjeeling tea.", cost: 45, lat: 51.5070, lng: -0.1400, icon: "utensils" },
+          { time: "03:30 PM", category: "Nature", title: "Hyde Park & Kensington Gardens", desc: "Stroll along Serpentine lake and royal palaces.", cost: 0, lat: 51.5050, lng: -0.1870, icon: "sun" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "bangkok",
+    name: "Bangkok",
+    country: "Thailand",
+    tagline: "Golden temples, buzzing floating markets, sizzling street food, and sky-high rooftop bars",
+    continent: "Asia",
+    vibe: ["Foodie", "Culture", "Nightlife", "Shopping"],
+    budgetLevel: "Budget ($ - $)",
+    avgDailyCost: 45,
+    bestMonths: "November - February",
+    currency: "THB (฿)",
+    language: "Thai",
+    coordinates: [13.7563, 100.5018],
+    image: "https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80",
+    description: "Marvel at the dazzling Grand Palace, take longtail boats down Chao Phraya, and taste world-renowned street food on Chinatown streets.",
+    highlights: ["The Grand Palace & Emerald Buddha", "Wat Arun (Temple of Dawn)", "Chatuchak Weekend Market", "Chao Phraya River Cruise", "Chinatown Yaowarat Food"],
+    visaInfo: {
+      type: "Visa-Free for 93 nationalities (up to 60 days)",
+      passportValidity: "At least 6 months validity",
+      adapter: "Type A, B & C (220V, 50Hz)",
+      emergency: { police: "191", touristPolice: "1155", ambulance: "1669" }
+    },
+    cultureEtiquette: {
+      tipping: "10-20% tipping is appreciated but not mandatory.",
+      customs: ["Wai greeting with slight bow", "Respect the Royal Family", "Cover shoulders and knees at all temples"],
+      phrases: [
+        { en: "Hello", local: "Sawasdee krup / ka", phonetic: "sah-wah-dee krahp" },
+        { en: "Thank you", local: "Khob khun krup / ka", phonetic: "kawp koon krahp" },
+        { en: "Delicious", local: "Aroi mak!", phonetic: "ah-roy mahk" }
+      ]
+    },
+    itineraryDays: [
+      {
+        day: 1,
+        title: "Golden Temples & River Express",
+        activities: [
+          { time: "08:30 AM", category: "Culture", title: "The Grand Palace & Wat Phra Kaew", desc: "Gaze upon the revered Emerald Buddha and gold-leaf murals.", cost: 14, lat: 13.7500, lng: 100.4914, icon: "landmark" },
+          { time: "11:30 AM", category: "Culture", title: "Wat Pho Giant Reclining Buddha", desc: "46-meter-long gold leaf Buddha and sacred grounds.", cost: 6, lat: 13.7465, lng: 100.4930, icon: "landmark" },
+          { time: "03:30 PM", category: "Culture", title: "Wat Arun Porcelain Spire at Dusk", desc: "Khmer-style stupa covered in colorful Chinese porcelain.", cost: 3, lat: 13.7437, lng: 100.4888, icon: "camera" }
+        ]
+      },
+      {
+        day: 2,
+        title: "Floating Markets & Chinatown Food Odyssey",
+        activities: [
+          { time: "07:30 AM", category: "Experience", title: "Floating Market Longtail Boat", desc: "Canal vendors selling tropical fruits and skewers from wooden boats.", cost: 25, lat: 13.5186, lng: 99.9570, icon: "compass" },
+          { time: "06:30 PM", category: "Food", title: "Chinatown Yaowarat Street Feast", desc: "Michelin-rated crab omelets and wok-tossed pad thai under neon.", cost: 12, lat: 13.7410, lng: 100.5090, icon: "utensils" }
+        ]
+      },
+      {
+        day: 3,
+        title: "Chatuchak & Sunset Dinner Cruise",
+        activities: [
+          { time: "09:30 AM", category: "Shopping", title: "Chatuchak Weekend Market", desc: "Explore 15,000 stalls of handcrafted silks, clothes, and spices.", cost: 10, lat: 13.7999, lng: 100.5502, icon: "shopping-bag" },
+          { time: "08:00 PM", category: "Dining", title: "Chao Phraya Luxury Dinner Cruise", desc: "Buffet dinner cruising past illuminated temples and skyline.", cost: 35, lat: 13.7250, lng: 100.5120, icon: "sparkles" }
+        ]
+      }
+    ]
+  }
+];
+
+const CURRENCIES = {
+  USD: { symbol: "$", name: "US Dollar", rate: 1.0 },
+  EUR: { symbol: "€", name: "Euro", rate: 0.92 },
+  GBP: { symbol: "£", name: "British Pound", rate: 0.79 },
+  INR: { symbol: "₹", name: "Indian Rupee", rate: 83.5 },
+  JPY: { symbol: "¥", name: "Japanese Yen", rate: 154.0 },
+  AUD: { symbol: "A$", name: "Australian Dollar", rate: 1.52 },
+  CAD: { symbol: "C$", name: "Canadian Dollar", rate: 1.37 },
+  AED: { symbol: "AED", name: "UAE Dirham", rate: 3.67 },
+  SGD: { symbol: "S$", name: "Singapore Dollar", rate: 1.35 },
+  CHF: { symbol: "CHF", name: "Swiss Franc", rate: 0.90 }
+};
+
+</script>
+  <script>
+// Voyex AI - Core Application Engine & State Management
+// World-Class AI Travel Planner Website
+
+let appState = {
+  activeTab: 'planner', // 'planner', 'itinerary', 'map', 'destinations', 'budget', 'packing', 'visa', 'booking'
+  currentTrip: null,
+  savedTrips: [],
+  currency: 'USD',
+  apiKey: localStorage.getItem('voyex_gemini_key') || '',
+  chatMessages: [
+    { sender: 'ai', text: '👋 Hello! I am your AI Travel Concierge. Ask me anything about your destination, hidden gems, local food, or packing tips!' }
+  ],
+  packingItems: [],
+  selectedDayIndex: 0,
+  mapInstance: null,
+  mapMarkers: [],
+  mapPolyline: null
+};
+
+// Initialize Application
+document.addEventListener('DOMContentLoaded', () => {
+  loadSavedTrips();
+  initDefaultPackingList();
+  renderDestinationsGrid();
+  updateCurrencyDisplay();
+  setupEventListeners();
+
+  // Load sample trip by default so user immediately sees world-class interactive UI
+  loadDefaultTrip();
+});
+
+// Load Default Trip (Tokyo Sample)
+function loadDefaultTrip() {
+  const tokyo = DESTINATIONS.find(d => d.id === 'tokyo');
+  if (tokyo) {
+    appState.currentTrip = {
+      id: 'trip_' + Date.now(),
+      destination: 'Tokyo, Japan',
+      destinationId: 'tokyo',
+      startDate: new Date().toISOString().split('T')[0],
+      durationDays: 3,
+      travelers: 'Couple',
+      travelStyle: 'Culture & Foodie',
+      budgetTier: 'Moderate ($)',
+      pace: 'Balanced',
+      itineraryDays: JSON.parse(JSON.stringify(tokyo.itineraryDays)),
+      notes: 'Discover neon streetscapes, historic Shinto shrines, and world-class ramen alleyways.',
+      cityData: tokyo
+    };
+    renderItineraryView();
+  }
+}
+
+// Load Saved Trips from LocalStorage
+function loadSavedTrips() {
+  try {
+    const saved = localStorage.getItem('voyex_saved_trips');
+    if (saved) {
+      appState.savedTrips = JSON.parse(saved);
+      updateSavedTripsBadge();
+    }
+  } catch (e) {
+    console.error('Error loading saved trips:', e);
+  }
+}
+
+function saveTripToVault() {
+  if (!appState.currentTrip) return;
+  const existingIdx = appState.savedTrips.findIndex(t => t.id === appState.currentTrip.id);
+  if (existingIdx >= 0) {
+    appState.savedTrips[existingIdx] = JSON.parse(JSON.stringify(appState.currentTrip));
+  } else {
+    appState.savedTrips.unshift(JSON.parse(JSON.stringify(appState.currentTrip)));
+  }
+  localStorage.setItem('voyex_saved_trips', JSON.stringify(appState.savedTrips));
+  updateSavedTripsBadge();
+  showToast('Trip successfully saved to your vault! 🎒');
+}
+
+function updateSavedTripsBadge() {
+  const badge = document.getElementById('savedTripsCountBadge');
+  if (badge) {
+    badge.innerText = appState.savedTrips.length;
+    badge.style.display = appState.savedTrips.length > 0 ? 'inline-flex' : 'none';
+  }
+}
+
+// Navigation & Tab Switching
+function switchTab(tabId) {
+  appState.activeTab = tabId;
+
+  // Update tab navigation active classes
+  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+    if (btn.dataset.tab === tabId) {
+      btn.className = 'nav-tab-btn px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 bg-primary-600 text-white shadow-md shadow-primary-500/20';
+    } else {
+      btn.className = 'nav-tab-btn px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-800';
+    }
+  });
+
+  // Toggle view sections
+  document.querySelectorAll('.app-section').forEach(sec => {
+    sec.classList.add('hidden');
+  });
+
+  const activeSec = document.getElementById(`section-${tabId}`);
+  if (activeSec) {
+    activeSec.classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if (tabId === 'itinerary') {
+    renderItineraryView();
+  } else if (tabId === 'flights') {
+    renderFlightsView();
+  } else if (tabId === 'trains') {
+    renderTrainsView();
+  } else if (tabId === 'buses') {
+    renderBusesView();
+  } else if (tabId === 'cars') {
+    renderCarRentalsView();
+  } else if (tabId === 'split') {
+    renderSplitExpensesView();
+  } else if (tabId === 'photos') {
+    renderPhotoSpotsView();
+  } else if (tabId === 'safety') {
+    renderSafetyScamsView();
+  } else if (tabId === 'map') {
+    renderMapView();
+  } else if (tabId === 'budget') {
+    renderBudgetView();
+  } else if (tabId === 'packing') {
+    renderPackingView();
+  } else if (tabId === 'visa') {
+    renderVisaCultureView();
+  } else if (tabId === 'booking') {
+    renderBookingView();
+  }
+
+  // Close mobile menu if open
+  const mobileMenu = document.getElementById('mobileNavMenu');
+  if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+    mobileMenu.classList.add('hidden');
+  }
+}
+
+// AI Trip Generator Logic
+async function handleTripGeneration(e) {
+  e.preventDefault();
+  const destInput = document.getElementById('plannerDestination').value.trim();
+  const duration = parseInt(document.getElementById('plannerDuration').value) || 3;
+  const travelers = document.getElementById('plannerTravelers').value;
+  const travelStyle = document.getElementById('plannerStyle').value;
+  const budgetTier = document.getElementById('plannerBudget').value;
+  const pace = document.getElementById('plannerPace').value;
+  const interests = document.getElementById('plannerInterests').value.trim();
+
+  if (!destInput) {
+    showToast('Please specify your destination! ✈️', 'error');
+    return;
+  }
+
+  const generateBtn = document.getElementById('generateTripBtn');
+  const originalBtnContent = generateBtn.innerHTML;
+  generateBtn.disabled = true;
+  generateBtn.innerHTML = `
+    <span class="inline-flex items-center gap-2">
+      <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Synthesizing AI Itinerary...
+    </span>
+  `;
+
+  try {
+    // Check if destination matches predefined dataset
+    const matchedDest = DESTINATIONS.find(d => 
+      destInput.toLowerCase().includes(d.name.toLowerCase()) || 
+      destInput.toLowerCase().includes(d.country.toLowerCase())
+    );
+
+    let itineraryDays = [];
+    let cityData = matchedDest || null;
+
+    if (matchedDest) {
+      itineraryDays = generateItineraryFromDatabase(matchedDest, duration, travelStyle, pace);
+    } else {
+      itineraryDays = generateSmartProceduralItinerary(destInput, duration, travelStyle, pace);
+      cityData = createGenericCityData(destInput, itineraryDays);
+    }
+
+    // Simulate AI synthesis progress
+    await new Promise(res => setTimeout(res, 900));
+
+    appState.currentTrip = {
+      id: 'trip_' + Date.now(),
+      destination: destInput,
+      destinationId: matchedDest ? matchedDest.id : 'custom',
+      startDate: document.getElementById('plannerStartDate').value || new Date().toISOString().split('T')[0],
+      durationDays: duration,
+      travelers: travelers,
+      travelStyle: travelStyle,
+      budgetTier: budgetTier,
+      pace: pace,
+      interests: interests,
+      itineraryDays: itineraryDays,
+      notes: `Curated personalized journey for ${travelers.toLowerCase()} exploring ${destInput}.`,
+      cityData: cityData
+    };
+
+    updatePackingListForDestination(destInput, duration);
+    switchTab('itinerary');
+    showToast(`✨ Generated ${duration}-Day Itinerary for ${destInput}!`);
+
+    // Trigger celebration confetti
+    if (typeof confetti === 'function') {
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Something went wrong during generation. Please retry.', 'error');
+  } finally {
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = originalBtnContent;
+  }
+}
+
+// Generate Itinerary from Curated DB
+function generateItineraryFromDatabase(dest, duration, travelStyle, pace) {
+  let days = [];
+  const baseDays = dest.itineraryDays || [];
+
+  for (let i = 0; i < duration; i++) {
+    if (i < baseDays.length) {
+      days.push(JSON.parse(JSON.stringify(baseDays[i])));
+    } else {
+      // Procedurally generate extended days
+      const dayNum = i + 1;
+      days.push({
+        day: dayNum,
+        title: `Day ${dayNum}: Hidden Gems & Leisure in ${dest.name}`,
+        activities: [
+          { time: "09:00 AM", category: "Discovery", title: `Explore Local Neighborhoods & Boutiques`, desc: `Wander through scenic side streets and local artisan cafes in ${dest.name}.`, cost: 15, lat: dest.coordinates[0] + (Math.random() - 0.5) * 0.04, lng: dest.coordinates[1] + (Math.random() - 0.5) * 0.04, icon: "compass" },
+          { time: "01:00 PM", category: "Food", title: `Traditional Regional Tasting Lunch`, desc: `Sample seasonal regional dishes and sweets at a top-rated eatery.`, cost: 22, lat: dest.coordinates[0] + (Math.random() - 0.5) * 0.04, lng: dest.coordinates[1] + (Math.random() - 0.5) * 0.04, icon: "utensils" },
+          { time: "04:30 PM", category: "Experience", title: `Scenic Sunset Viewpoint & Relaxation`, desc: `Relax at a local panoramic terrace or park with breathtaking golden hour views.`, cost: 10, lat: dest.coordinates[0] + (Math.random() - 0.5) * 0.04, lng: dest.coordinates[1] + (Math.random() - 0.5) * 0.04, icon: "camera" },
+          { time: "08:00 PM", category: "Dining", title: `Farewell Evening Feast & Live Music`, desc: `Celebrate the trip with fine dining and evening atmosphere.`, cost: 35, lat: dest.coordinates[0] + (Math.random() - 0.5) * 0.04, lng: dest.coordinates[1] + (Math.random() - 0.5) * 0.04, icon: "glass" }
+        ]
+      });
+    }
+  }
+  return days;
+}
+
+// Procedural AI Generator for Any City Worldwide
+function generateSmartProceduralItinerary(destName, duration, style, pace) {
+  const days = [];
+  const coords = [40.0 + (Math.random() * 20 - 10), 10.0 + (Math.random() * 40 - 20)];
+
+  const themes = [
+    { title: "Arrival & City Center Highlights", morning: "Historical Old Town & Landmark Square", lunch: "Traditional Local Market Food", afternoon: "Famous Museum & Cultural Walk", evening: "Panoramic Sunset Lookout & Dinner" },
+    { title: "Art, Architecture & Scenic Neighborhoods", morning: "Architectural Wonders & Royal Gardens", lunch: "Authentic Bistro & Specialty Coffee", afternoon: "Local Art Galleries & Shopping Stroll", evening: "Waterfront Promenade & Cocktail Lounge" },
+    { title: "Nature, Adventure & Local Flavors", morning: "Scenic Nature Park or Viewpoint Hike", lunch: "Countryside / Waterfront Dining", afternoon: "Interactive Cultural Workshop or Boat Tour", evening: "Lantern-Lit Old Quarter & Wine Bar" },
+    { title: "Hidden Gems & Artisan Quarters", morning: "Artisans Market & Vintage Boutiques", lunch: "Chef-Recommended Fusion Cuisine", afternoon: "Quiet Gardens & Botanical Greenhouses", evening: "Live Music & Historic Tavern" }
+  ];
+
+  for (let i = 0; i < duration; i++) {
+    const theme = themes[i % themes.length];
+    const dayNum = i + 1;
+    days.push({
+      day: dayNum,
+      title: `Day ${dayNum}: ${theme.title} in ${destName}`,
+      activities: [
+        { time: "09:00 AM", category: "Culture", title: `${theme.morning}`, desc: `Immerse in the iconic sights, historic architecture, and morning atmosphere of ${destName}.`, cost: 18, lat: coords[0] + (Math.random() - 0.5) * 0.03, lng: coords[1] + (Math.random() - 0.5) * 0.03, icon: "landmark" },
+        { time: "01:00 PM", category: "Food", title: `${theme.lunch}`, desc: `Savor authentic regional flavors and fresh specialties recommended by locals.`, cost: 20, lat: coords[0] + (Math.random() - 0.5) * 0.03, lng: coords[1] + (Math.random() - 0.5) * 0.03, icon: "utensils" },
+        { time: "03:30 PM", category: "Sightseeing", title: `${theme.afternoon}`, desc: `Discover stunning photography spots, artisan shopping, and cultural heritage.`, cost: 15, lat: coords[0] + (Math.random() - 0.5) * 0.03, lng: coords[1] + (Math.random() - 0.5) * 0.03, icon: "camera" },
+        { time: "07:30 PM", category: "Dining", title: `${theme.evening}`, desc: `Unwind with fine dining, local wines or beverages, and vibrant evening nightlife.`, cost: 35, lat: coords[0] + (Math.random() - 0.5) * 0.03, lng: coords[1] + (Math.random() - 0.5) * 0.03, icon: "glass" }
+      ]
+    });
+  }
+  return days;
+}
+
+function createGenericCityData(destName, itineraryDays) {
+  return {
+    id: destName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+    name: destName,
+    country: "International Destination",
+    tagline: `Experience the captivating magic, culture, and culinary wonders of ${destName}`,
+    continent: "Global",
+    vibe: ["Culture", "Discovery", "Foodie"],
+    budgetLevel: "Moderate ($)",
+    avgDailyCost: 95,
+    currency: "USD ($)",
+    language: "Local Language & English",
+    coordinates: itineraryDays[0]?.activities[0] ? [itineraryDays[0].activities[0].lat, itineraryDays[0].activities[0].lng] : [48.8566, 2.3522],
+    image: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80",
+    description: `A dynamic, curated travel experience designed for unforgettable memories in ${destName}.`,
+    highlights: ["Historic Landmark Strolls", "Authentic Local Gastronomy", "Scenic Viewpoint Sunsets", "Artisan Markets"],
+    visaInfo: {
+      type: "Check national consulate website for specific passport visa rules",
+      passportValidity: "Standard requirement: 6 months validity",
+      adapter: "Universal Adapter Recommended (100-240V)",
+      emergency: { police: "112 / 911", ambulance: "112 / 911", touristHelp: "Local Consulate" }
+    },
+    cultureEtiquette: {
+      tipping: "10-15% is standard practice in restaurants and for tour guides.",
+      customs: ["Always greet locals respectfully", "Keep travel copies of passports in digital backup", "Validate public transit passes"],
+      phrases: [
+        { en: "Hello", local: "Hello / Bonjour / Ciao / Hola", phonetic: "heh-loh" },
+        { en: "Thank you", local: "Thank you / Merci / Grazie / Gracias", phonetic: "thahnk yoo" }
+      ]
+    },
+    itineraryDays: itineraryDays
+  };
+}
+
+// Render Itinerary View
+function renderItineraryView() {
+  const container = document.getElementById('itineraryContent');
+  if (!container) return;
+
+  if (!appState.currentTrip) {
+    container.innerHTML = `
+      <div class="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-8">
+        <div class="w-16 h-16 bg-primary-50 dark:bg-primary-900/30 text-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">✈️</div>
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">No Active Itinerary Yet</h3>
+        <p class="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">Use our AI Trip Planner wizard to instantly generate a day-by-day travel masterplan!</p>
+        <button onclick="switchTab('planner')" class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl shadow-lg transition">Create New Trip Now</button>
+      </div>
+    `;
+    return;
+  }
+
+  const trip = appState.currentTrip;
+  const rate = CURRENCIES[appState.currency].rate;
+  const symbol = CURRENCIES[appState.currency].symbol;
+
+  let totalTripCost = 0;
+  trip.itineraryDays.forEach(day => {
+    day.activities.forEach(act => {
+      totalTripCost += (act.cost || 0);
+    });
+  });
+
+  const convertedCost = Math.round(totalTripCost * rate);
+
+  let daysHtml = trip.itineraryDays.map((day, dIdx) => {
+    let activitiesHtml = day.activities.map((act, aIdx) => {
+      const actCostConverted = Math.round(act.cost * rate);
+      return `
+        <div class="relative pl-8 pb-8 group">
+          <!-- Timeline Line -->
+          <div class="absolute left-3.5 top-6 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700 group-last:hidden"></div>
+          
+          <!-- Timeline Node -->
+          <div class="absolute left-0 top-1.5 w-7 h-7 rounded-full bg-white dark:bg-slate-800 border-2 border-primary-500 flex items-center justify-center text-primary-600 shadow-sm group-hover:scale-110 group-hover:bg-primary-500 group-hover:text-white transition-all">
+            <span class="text-xs font-bold">${aIdx + 1}</span>
+          </div>
+
+          <!-- Activity Card -->
+          <div class="bg-white dark:bg-slate-800/80 backdrop-blur rounded-2xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-all">
+            <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400">${act.time}</span>
+                <span class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">${act.category}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                  ${act.cost === 0 ? 'Free Entry' : `~${symbol}${actCostConverted}`}
+                </span>
+                <button onclick="editActivity(${dIdx}, ${aIdx})" title="Edit activity" class="text-slate-400 hover:text-primary-600 p-1 transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+                <button onclick="deleteActivity(${dIdx}, ${aIdx})" title="Delete activity" class="text-slate-400 hover:text-rose-500 p-1 transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </div>
+            </div>
+
+            <h4 class="text-base font-bold text-slate-900 dark:text-white mb-1.5">${act.title}</h4>
+            <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-3">${act.desc}</p>
+
+            <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <a href="https://maps.google.com/?q=${encodeURIComponent(act.title + ' ' + trip.destination)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:underline">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Open in Google Maps
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="mb-10 bg-slate-50 dark:bg-slate-900/60 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 mb-2">
+              Day ${day.day}
+            </div>
+            <h3 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">${day.title}</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="addCustomActivity(${dIdx})" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:text-primary-600 transition shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              Add Activity
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          ${activitiesHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <!-- Header Banner -->
+    <div class="relative overflow-hidden rounded-3xl mb-8 border border-slate-200 dark:border-slate-800 shadow-lg">
+      <div class="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/70 to-transparent z-10"></div>
+      <img src="${trip.cityData?.image || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80'}" alt="${trip.destination}" class="w-full h-72 sm:h-80 object-cover">
+      
+      <div class="absolute inset-0 z-20 flex flex-col justify-end p-6 sm:p-8">
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary-600 text-white shadow">
+            ${trip.durationDays} Days Itinerary
+          </span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-white/20 backdrop-blur text-white">
+            👥 ${trip.travelers}
+          </span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-white/20 backdrop-blur text-white">
+            🎯 ${trip.travelStyle}
+          </span>
+        </div>
+
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-2 tracking-tight">${trip.destination}</h1>
+        <p class="text-slate-200 text-sm sm:text-base max-w-2xl line-clamp-2">${trip.notes || trip.cityData?.tagline}</p>
+
+        <!-- Action Bar -->
+        <div class="flex flex-wrap items-center gap-3 mt-6">
+          <button onclick="saveTripToVault()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-primary-600 hover:bg-primary-500 text-white shadow-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+            Save Trip
+          </button>
+          <button onclick="openExportModal()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm bg-white/10 hover:bg-white/20 backdrop-blur text-white border border-white/20 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+            Export & Share
+          </button>
+          <button onclick="switchTab('map')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm bg-white/10 hover:bg-white/20 backdrop-blur text-white border border-white/20 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+            Interactive Route Map
+          </button>
+          <button onclick="window.print()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm bg-white/10 hover:bg-white/20 backdrop-blur text-white border border-white/20 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Print / PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm text-center">
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Est. Activity Cost</span>
+        <span class="text-lg sm:text-xl font-black text-slate-900 dark:text-white">${symbol}${convertedCost}</span>
+      </div>
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm text-center">
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Total Days</span>
+        <span class="text-lg sm:text-xl font-black text-slate-900 dark:text-white">${trip.durationDays} Days</span>
+      </div>
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm text-center">
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Pace</span>
+        <span class="text-lg sm:text-xl font-black text-slate-900 dark:text-white">${trip.pace}</span>
+      </div>
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm text-center">
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Travel Style</span>
+        <span class="text-lg sm:text-xl font-black text-slate-900 dark:text-white truncate">${trip.travelStyle}</span>
+      </div>
+    </div>
+
+    <!-- Daily Timeline Render -->
+    <div>
+      ${daysHtml}
+    </div>
+  `;
+}
+
+// Activity Modifications
+function addCustomActivity(dayIdx) {
+  const title = prompt("Enter activity title:");
+  if (!title) return;
+  const time = prompt("Enter time (e.g. 10:30 AM):", "10:30 AM") || "10:30 AM";
+  const desc = prompt("Enter activity description:", "Explore and enjoy the sights.") || "Explore and enjoy the sights.";
+  const cost = parseFloat(prompt("Estimated cost in USD (enter 0 for free):", "0")) || 0;
+
+  if (!appState.currentTrip.itineraryDays[dayIdx]) return;
+
+  const baseLat = appState.currentTrip.cityData?.coordinates[0] || 48.8566;
+  const baseLng = appState.currentTrip.cityData?.coordinates[1] || 2.3522;
+
+  appState.currentTrip.itineraryDays[dayIdx].activities.push({
+    time: time,
+    category: "Custom",
+    title: title,
+    desc: desc,
+    cost: cost,
+    lat: baseLat + (Math.random() - 0.5) * 0.02,
+    lng: baseLng + (Math.random() - 0.5) * 0.02,
+    icon: "sparkles"
+  });
+
+  renderItineraryView();
+  showToast("Activity added successfully! 📍");
+}
+
+function editActivity(dayIdx, actIdx) {
+  const act = appState.currentTrip.itineraryDays[dayIdx].activities[actIdx];
+  const newTitle = prompt("Edit Activity Title:", act.title);
+  if (newTitle !== null && newTitle.trim() !== '') {
+    act.title = newTitle.trim();
+  }
+  const newDesc = prompt("Edit Description:", act.desc);
+  if (newDesc !== null) {
+    act.desc = newDesc.trim();
+  }
+  const newCost = prompt("Edit Cost (USD):", act.cost);
+  if (newCost !== null && !isNaN(parseFloat(newCost))) {
+    act.cost = parseFloat(newCost);
+  }
+  renderItineraryView();
+  showToast("Activity updated! ✨");
+}
+
+function deleteActivity(dayIdx, actIdx) {
+  if (confirm("Are you sure you want to delete this activity?")) {
+    appState.currentTrip.itineraryDays[dayIdx].activities.splice(actIdx, 1);
+    renderItineraryView();
+    showToast("Activity removed.");
+  }
+}
+
+// Interactive Map View with Leaflet
+function renderMapView() {
+  const mapContainer = document.getElementById('leafletMapContainer');
+  if (!mapContainer || !appState.currentTrip) return;
+
+  const trip = appState.currentTrip;
+  const centerCoords = trip.cityData?.coordinates || [48.8566, 2.3522];
+
+  // Render day selector buttons
+  const daySelector = document.getElementById('mapDaySelector');
+  if (daySelector) {
+    daySelector.innerHTML = trip.itineraryDays.map((day, idx) => `
+      <button onclick="selectMapDay(${idx})" class="px-4 py-2 rounded-xl text-xs font-bold transition ${appState.selectedDayIndex === idx ? 'bg-primary-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">
+        Day ${day.day}
+      </button>
+    `).join('');
+  }
+
+  setTimeout(() => {
+    if (!appState.mapInstance && typeof L !== 'undefined') {
+      appState.mapInstance = L.map('leafletMapContainer').setView(centerCoords, 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(appState.mapInstance);
+    } else if (appState.mapInstance) {
+      appState.mapInstance.setView(centerCoords, 13);
+      appState.mapInstance.invalidateSize();
+    }
+    updateMapMarkersForDay(appState.selectedDayIndex);
+  }, 100);
+}
+
+function selectMapDay(dayIdx) {
+  appState.selectedDayIndex = dayIdx;
+  renderMapView();
+}
+
+function updateMapMarkersForDay(dayIdx) {
+  if (!appState.mapInstance || !appState.currentTrip || typeof L === 'undefined') return;
+
+  // Clear existing markers & polyline
+  appState.mapMarkers.forEach(m => appState.mapInstance.removeLayer(m));
+  appState.mapMarkers = [];
+  if (appState.mapPolyline) {
+    appState.mapInstance.removeLayer(appState.mapPolyline);
+    appState.mapPolyline = null;
+  }
+
+  const selectedDay = appState.currentTrip.itineraryDays[dayIdx] || appState.currentTrip.itineraryDays[0];
+  if (!selectedDay) return;
+
+  const latLngs = [];
+
+  selectedDay.activities.forEach((act, idx) => {
+    if (act.lat && act.lng) {
+      const marker = L.marker([act.lat, act.lng]).addTo(appState.mapInstance);
+      marker.bindPopup(`
+        <div style="font-family: sans-serif; font-size: 13px; line-height: 1.4;">
+          <strong style="color: #2563eb;">Step ${idx + 1}: ${act.title}</strong><br>
+          <span style="color: #64748b; font-size: 11px;">⏰ ${act.time} | 🏷️ ${act.category}</span><br>
+          <p style="margin: 4px 0 0 0; color: #334155;">${act.desc}</p>
+        </div>
+      `);
+      appState.mapMarkers.push(marker);
+      latLngs.push([act.lat, act.lng]);
+    }
+  });
+
+  if (latLngs.length > 1) {
+    appState.mapPolyline = L.polyline(latLngs, { color: '#2563eb', weight: 4, opacity: 0.8, dashArray: '6, 8' }).addTo(appState.mapInstance);
+    appState.mapInstance.fitBounds(latLngs, { padding: [40, 40] });
+  } else if (latLngs.length === 1) {
+    appState.mapInstance.setView(latLngs[0], 14);
+  }
+}
+
+// Destination Discovery Explorer Grid
+function renderDestinationsGrid() {
+  const container = document.getElementById('destinationsGrid');
+  if (!container) return;
+
+  container.innerHTML = DESTINATIONS.map(dest => `
+    <div class="group bg-white dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
+      <div class="relative h-52 overflow-hidden">
+        <img src="${dest.image}" alt="${dest.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+        <div class="absolute top-4 left-4">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-black/40 backdrop-blur text-white border border-white/20">
+            ${dest.continent}
+          </span>
+        </div>
+        <div class="absolute bottom-4 left-4 right-4 text-white">
+          <h3 class="text-2xl font-black">${dest.name}</h3>
+          <p class="text-xs text-slate-200">${dest.country}</p>
+        </div>
+      </div>
+
+      <div class="p-6 flex-1 flex flex-col justify-between">
+        <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4">${dest.tagline}</p>
+
+        <div class="space-y-2 mb-6 text-xs text-slate-500 dark:text-slate-400">
+          <div class="flex justify-between pb-1 border-b border-slate-100 dark:border-slate-700/50">
+            <span>Best Season:</span>
+            <span class="font-semibold text-slate-800 dark:text-slate-200">${dest.bestMonths}</span>
+          </div>
+          <div class="flex justify-between pb-1 border-b border-slate-100 dark:border-slate-700/50">
+            <span>Avg Daily Cost:</span>
+            <span class="font-semibold text-slate-800 dark:text-slate-200">~${dest.avgDailyCost} / day</span>
+          </div>
+        </div>
+
+        <button onclick="planTripToDestination('${dest.id}')" class="w-full py-3 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-bold text-sm rounded-xl hover:bg-primary-600 hover:text-white transition shadow-sm">
+          Plan Trip to ${dest.name} ✨
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function planTripToDestination(destId) {
+  const dest = DESTINATIONS.find(d => d.id === destId);
+  if (dest) {
+    document.getElementById('plannerDestination').value = `${dest.name}, ${dest.country}`;
+    switchTab('planner');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast(`Pre-selected ${dest.name}! Adjust preferences and click Generate Trip.`);
+  }
+}
+
+// Budget & Currency Calculation View
+function renderBudgetView() {
+  const container = document.getElementById('budgetViewContent');
+  if (!container || !appState.currentTrip) return;
+
+  const trip = appState.currentTrip;
+  const rate = CURRENCIES[appState.currency].rate;
+  const symbol = CURRENCIES[appState.currency].symbol;
+
+  let activityCost = 0;
+  trip.itineraryDays.forEach(day => {
+    day.activities.forEach(act => {
+      activityCost += (act.cost || 0);
+    });
+  });
+
+  const dailyAvg = trip.cityData?.avgDailyCost || 100;
+  const lodgingCost = dailyAvg * 0.45 * trip.durationDays;
+  const foodCost = dailyAvg * 0.35 * trip.durationDays;
+  const transportCost = dailyAvg * 0.20 * trip.durationDays;
+  const grandTotal = activityCost + lodgingCost + foodCost + transportCost;
+
+  container.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Total Summary Card -->
+      <div class="lg:col-span-1 bg-gradient-to-br from-primary-600 to-indigo-700 text-white rounded-3xl p-8 shadow-xl flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-bold tracking-wider uppercase opacity-80 block mb-2">Estimated Total Budget</span>
+          <h2 class="text-4xl sm:text-5xl font-black mb-2">${symbol}${Math.round(grandTotal * rate)}</h2>
+          <p class="text-xs text-primary-100 mb-6">Calculated for ${trip.durationDays} days in ${trip.destination} (${appState.currency})</p>
+
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between py-2 border-b border-white/10">
+              <span class="opacity-90">Daily Average / Person</span>
+              <span class="font-bold">${symbol}${Math.round((grandTotal / trip.durationDays) * rate)}</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-white/10">
+              <span class="opacity-90">Tipping Culture</span>
+              <span class="font-bold text-xs">${trip.cityData?.cultureEtiquette?.tipping || '10-15%'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-white/20">
+          <label class="text-xs font-semibold block mb-2 opacity-90">Switch Currency</label>
+          <select onchange="changeCurrency(this.value)" class="w-full bg-white/20 text-white font-bold text-sm py-2.5 px-3 rounded-xl border border-white/30 focus:outline-none focus:ring-2 focus:ring-white">
+            ${Object.keys(CURRENCIES).map(c => `
+              <option value="${c}" class="text-slate-900" ${appState.currency === c ? 'selected' : ''}>
+                ${c} (${CURRENCIES[c].symbol}) - ${CURRENCIES[c].name}
+              </option>
+            `).join('')}
+          </select>
+        </div>
+      </div>
+
+      <!-- Breakdown Bars -->
+      <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+        <h3 class="text-xl font-black text-slate-900 dark:text-white">Estimated Category Breakdown</h3>
+
+        <!-- Lodging -->
+        <div>
+          <div class="flex justify-between text-sm font-semibold mb-2 text-slate-800 dark:text-slate-200">
+            <span>🏨 Accommodation & Hotels (~45%)</span>
+            <span>${symbol}${Math.round(lodgingCost * rate)}</span>
+          </div>
+          <div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+            <div class="bg-blue-500 h-full" style="width: 45%"></div>
+          </div>
+        </div>
+
+        <!-- Food -->
+        <div>
+          <div class="flex justify-between text-sm font-semibold mb-2 text-slate-800 dark:text-slate-200">
+            <span>🍲 Food, Cafes & Dining (~35%)</span>
+            <span>${symbol}${Math.round(foodCost * rate)}</span>
+          </div>
+          <div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+            <div class="bg-amber-500 h-full" style="width: 35%"></div>
+          </div>
+        </div>
+
+        <!-- Activities -->
+        <div>
+          <div class="flex justify-between text-sm font-semibold mb-2 text-slate-800 dark:text-slate-200">
+            <span>🎟️ Activities, Sights & Tickets</span>
+            <span>${symbol}${Math.round(activityCost * rate)}</span>
+          </div>
+          <div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+            <div class="bg-emerald-500 h-full" style="width: 25%"></div>
+          </div>
+        </div>
+
+        <!-- Transport -->
+        <div>
+          <div class="flex justify-between text-sm font-semibold mb-2 text-slate-800 dark:text-slate-200">
+            <span>🚇 Local Metro, Trains & Taxis (~20%)</span>
+            <span>${symbol}${Math.round(transportCost * rate)}</span>
+          </div>
+          <div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+            <div class="bg-purple-500 h-full" style="width: 20%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function changeCurrency(curr) {
+  if (CURRENCIES[curr]) {
+    appState.currency = curr;
+    updateCurrencyDisplay();
+    if (appState.activeTab === 'itinerary') renderItineraryView();
+    if (appState.activeTab === 'budget') renderBudgetView();
+    showToast(`Currency set to ${curr} (${CURRENCIES[curr].symbol})`);
+  }
+}
+
+function updateCurrencyDisplay() {
+  const elem = document.getElementById('navbarCurrencyBtn');
+  if (elem) {
+    elem.innerText = `${appState.currency} (${CURRENCIES[appState.currency].symbol})`;
+  }
+}
+
+// Adaptive Packing Checklist
+function initDefaultPackingList() {
+  appState.packingItems = [
+    { id: 1, text: "Passport & Digital Copies", category: "Documents", checked: true },
+    { id: 2, text: "Universal Power Adapter & Cables", category: "Electronics", checked: true },
+    { id: 3, text: "Comfortable Walking Shoes", category: "Clothing", checked: false },
+    { id: 4, text: "Portable Power Bank (10,000mAh+)", category: "Electronics", checked: false },
+    { id: 5, text: "Weather-Appropriate Jacket / Layer", category: "Clothing", checked: false },
+    { id: 6, text: "Travel Insurance Documentation", category: "Documents", checked: false },
+    { id: 7, text: "Refillable Water Bottle", category: "Essentials", checked: false },
+    { id: 8, text: "Personal Medications & First Aid", category: "Health", checked: false }
+  ];
+}
+
+function updatePackingListForDestination(destName, duration) {
+  initDefaultPackingList();
+  if (duration > 5) {
+    appState.packingItems.push({ id: 9, text: "Luggage Laundry Bag & Extra Underwear", category: "Clothing", checked: false });
+  }
+  if (destName.toLowerCase().includes('bali') || destName.toLowerCase().includes('beach') || destName.toLowerCase().includes('thailand')) {
+    appState.packingItems.push({ id: 10, text: "Sunscreen SPF 50 & Swimwear", category: "Essentials", checked: false });
+    appState.packingItems.push({ id: 11, text: "Mosquito Repellent Spray", category: "Health", checked: false });
+  }
+  if (destName.toLowerCase().includes('swiss') || destName.toLowerCase().includes('alps')) {
+    appState.packingItems.push({ id: 12, text: "Thermal Base Layers & Waterproof Boots", category: "Clothing", checked: false });
+    appState.packingItems.push({ id: 13, text: "UV Polarized Sunglasses & Lip Balm", category: "Essentials", checked: false });
+  }
+}
+
+function renderPackingView() {
+  const container = document.getElementById('packingViewContent');
+  if (!container) return;
+
+  const total = appState.packingItems.length;
+  const checkedCount = appState.packingItems.filter(i => i.checked).length;
+  const percentage = total > 0 ? Math.round((checkedCount / total) * 100) : 0;
+
+  const itemsHtml = appState.packingItems.map(item => `
+    <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition">
+      <input type="checkbox" onchange="togglePackingItem(${item.id})" ${item.checked ? 'checked' : ''} class="w-5 h-5 rounded text-primary-600 focus:ring-primary-500">
+      <span class="text-sm font-medium ${item.checked ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}">${item.text}</span>
+      <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300">${item.category}</span>
+    </label>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 shadow-sm max-w-2xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="text-2xl font-black text-slate-900 dark:text-white">Packing Assistant</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Adaptive checklist for ${appState.currentTrip?.destination || 'your journey'}</p>
+        </div>
+        <span class="text-sm font-bold text-primary-600 dark:text-primary-400">${checkedCount} / ${total} Packed (${percentage}%)</span>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-slate-100 dark:bg-slate-700 h-2.5 rounded-full mb-6 overflow-hidden">
+        <div class="bg-primary-600 h-full transition-all duration-300" style="width: ${percentage}%"></div>
+      </div>
+
+      <!-- Add Custom Item Input -->
+      <div class="flex gap-2 mb-6">
+        <input type="text" id="newPackingItemInput" placeholder="Add custom item (e.g. Camera tripod)..." class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+        <button onclick="addCustomPackingItem()" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition">Add</button>
+      </div>
+
+      <!-- Items List -->
+      <div class="space-y-2">
+        ${itemsHtml}
+      </div>
+    </div>
+  `;
+}
+
+function togglePackingItem(id) {
+  const item = appState.packingItems.find(i => i.id === id);
+  if (item) {
+    item.checked = !item.checked;
+    renderPackingView();
+  }
+}
+
+function addCustomPackingItem() {
+  const input = document.getElementById('newPackingItemInput');
+  if (!input || !input.value.trim()) return;
+
+  appState.packingItems.push({
+    id: Date.now(),
+    text: input.value.trim(),
+    category: "Custom",
+    checked: false
+  });
+  input.value = '';
+  renderPackingView();
+  showToast("Packing item added! 🧳");
+}
+
+// Visa, Culture & Audio Phrasebook View
+function renderVisaCultureView() {
+  const container = document.getElementById('visaCultureContent');
+  if (!container || !appState.currentTrip) return;
+
+  const trip = appState.currentTrip;
+  const city = trip.cityData;
+
+  const phrasesHtml = (city?.cultureEtiquette?.phrases || []).map(p => `
+    <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200/80 dark:border-slate-700">
+      <div>
+        <span class="text-xs font-semibold text-slate-400 block">${p.en}</span>
+        <span class="text-base font-bold text-slate-900 dark:text-white">${p.local}</span>
+        <span class="text-xs text-primary-600 dark:text-primary-400 block italic">Pronounced: ${p.phonetic}</span>
+      </div>
+      <button onclick="speakPhrase('${p.local}')" class="p-2.5 rounded-xl bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 hover:bg-primary-50 shadow-sm transition" title="Listen to pronunciation">
+        🔊
+      </button>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+      <!-- Visa & Emergency -->
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+        <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+          🛂 Visa & Essential Info
+        </h3>
+        
+        <div class="space-y-4 text-sm text-slate-600 dark:text-slate-300">
+          <div class="p-4 rounded-2xl bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800">
+            <span class="text-xs font-bold text-primary-800 dark:text-primary-300 block mb-1">Visa Guidelines</span>
+            <p>${city?.visaInfo?.type || 'Verify specific requirements on official embassy portals.'}</p>
+          </div>
+
+          <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
+            <span class="font-medium">Passport Validity</span>
+            <span class="font-bold text-slate-900 dark:text-white">${city?.visaInfo?.passportValidity || '6 Months'}</span>
+          </div>
+
+          <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
+            <span class="font-medium">Power Plug Adapter</span>
+            <span class="font-bold text-slate-900 dark:text-white">${city?.visaInfo?.adapter || 'Universal'}</span>
+          </div>
+
+          <div class="pt-2">
+            <span class="text-xs font-bold text-rose-600 uppercase block mb-2">Emergency Contacts</span>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-800 dark:text-rose-300">
+                🚨 Police: <strong>${city?.visaInfo?.emergency?.police || '112'}</strong>
+              </div>
+              <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-800 dark:text-rose-300">
+                🚑 Ambulance: <strong>${city?.visaInfo?.emergency?.ambulance || '112'}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phrasebook & Etiquette -->
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+        <h3 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+          🗣️ Audio Phrasebook & Customs
+        </h3>
+
+        <div class="space-y-3">
+          ${phrasesHtml || '<p class="text-sm text-slate-400">No phrases available.</p>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function speakPhrase(text) {
+  if ('speechSynthesis' in window) {
+    const cleanText = text.replace(/\(.*?\)/g, '');
+    const utter = new SpeechSynthesisUtterance(cleanText);
+    utter.rate = 0.9;
+    window.speechSynthesis.speak(utter);
+  } else {
+    showToast("Speech synthesis is not supported on this browser.");
+  }
+}
+
+// Flight & Hotel Booking Link Hub
+function renderBookingView() {
+  const container = document.getElementById('bookingViewContent');
+  if (!container || !appState.currentTrip) return;
+
+  const dest = appState.currentTrip.destination;
+  const encodedDest = encodeURIComponent(dest);
+
+  container.innerHTML = `
+    <div class="max-w-4xl mx-auto space-y-8">
+      <div class="text-center max-w-xl mx-auto">
+        <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-2">Travel Booking Hub</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Compare live flight prices, reserve boutique hotels, and book official attraction tickets for ${dest}.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Google Flights -->
+        <a href="https://www.google.com/travel/flights?q=flights+to+${encodedDest}" target="_blank" rel="noopener noreferrer" class="group bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center text-2xl mb-4">✈️</div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Google Flights</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Compare real-time airline ticket prices, non-stop routes, and baggage fees.</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 text-xs font-bold text-primary-600 dark:text-primary-400 group-hover:underline">
+            Search Flights &rarr;
+          </span>
+        </a>
+
+        <!-- Booking.com -->
+        <a href="https://www.booking.com/searchresults.html?ss=${encodedDest}" target="_blank" rel="noopener noreferrer" class="group bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center text-2xl mb-4">🏨</div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Booking.com</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Find top-rated boutique hotels, private apartments, and luxury villas.</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 text-xs font-bold text-primary-600 dark:text-primary-400 group-hover:underline">
+            Browse Hotels &rarr;
+          </span>
+        </a>
+
+        <!-- Skyscanner -->
+        <a href="https://www.skyscanner.net/transport/flights-to/${encodedDest}" target="_blank" rel="noopener noreferrer" class="group bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center text-2xl mb-4">🌍</div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Skyscanner</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Compare flight deals across budget and premium airlines worldwide.</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 text-xs font-bold text-primary-600 dark:text-primary-400 group-hover:underline">
+            Compare Skyscanner &rarr;
+          </span>
+        </a>
+      </div>
+    </div>
+  `;
+}
+
+// AI Concierge Chatbot Widget
+function toggleChatDrawer() {
+  const drawer = document.getElementById('aiChatDrawer');
+  if (drawer) {
+    drawer.classList.toggle('hidden');
+    if (!drawer.classList.contains('hidden')) {
+      renderChatMessages();
+    }
+  }
+}
+
+function renderChatMessages() {
+  const container = document.getElementById('chatMessagesContainer');
+  if (!container) return;
+
+  container.innerHTML = appState.chatMessages.map(msg => `
+    <div class="flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}">
+      ${msg.sender === 'ai' ? '<div class="w-7 h-7 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">AI</div>' : ''}
+      <div class="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${msg.sender === 'user' ? 'bg-primary-600 text-white rounded-br-none' : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none shadow-sm'}">
+        ${msg.text}
+      </div>
+    </div>
+  `).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function handleSendChatMessage(e) {
+  e.preventDefault();
+  const input = document.getElementById('chatInputMessage');
+  if (!input || !input.value.trim()) return;
+
+  const query = input.value.trim();
+  appState.chatMessages.push({ sender: 'user', text: query });
+  input.value = '';
+  renderChatMessages();
+
+  // Generate Concierge AI Response
+  setTimeout(() => {
+    let reply = `Great question about ${appState.currentTrip?.destination || 'your trip'}! `;
+    const qLower = query.toLowerCase();
+
+    if (qLower.includes('food') || qLower.includes('eat') || qLower.includes('restaurant') || qLower.includes('vegetarian')) {
+      reply += "For authentic dining, check out local alleyways and food markets near the city center. Try ordering signature street specialties and always look for places with lively local crowds!";
+    } else if (qLower.includes('weather') || qLower.includes('pack')) {
+      reply += "I recommend packing comfortable walking sneakers, a light weather-resistant jacket, and an adapter for charging devices on the go.";
+    } else if (qLower.includes('hidden') || qLower.includes('secret') || qLower.includes('gems')) {
+      reply += "A wonderful hidden gem is to explore the old artisan quarter just before sunset when the tourist crowds disperse and local lantern lights illuminate the streets.";
+    } else {
+      reply += "Remember to keep your passport safely secured, carry a digital travel card for subways, and enjoy every moment of your exploration!";
+    }
+
+    appState.chatMessages.push({ sender: 'ai', text: reply });
+    renderChatMessages();
+  }, 600);
+}
+
+// Export Suite: Calendar .ICS, QR Code & Share
+function openExportModal() {
+  const modal = document.getElementById('exportShareModal');
+  if (!modal || !appState.currentTrip) return;
+
+  const currentUrl = window.location.href;
+  const qrContainer = document.getElementById('qrCodeContainer');
+  if (qrContainer) {
+    // Generate QR Code via QuickChart open image API
+    qrContainer.innerHTML = `
+      <img src="https://quickchart.io/qr?text=${encodeURIComponent(currentUrl)}&size=160&centerImageUrl=https://img.icons8.com/color/48/airplane-take-off.png" alt="Trip QR Code" class="rounded-xl shadow border border-slate-200 dark:border-slate-700 mx-auto">
+    `;
+  }
+  modal.classList.remove('hidden');
+}
+
+function closeExportModal() {
+  const modal = document.getElementById('exportShareModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function downloadCalendarICS() {
+  if (!appState.currentTrip) return;
+  const trip = appState.currentTrip;
+
+  let icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Voyex AI//Travel Planner//EN\r\nCALSCALE:GREGORIAN\r\n";
+
+  trip.itineraryDays.forEach(day => {
+    day.activities.forEach(act => {
+      icsContent += "BEGIN:VEVENT\r\n";
+      icsContent += `SUMMARY:${act.title} - ${trip.destination}\r\n`;
+      icsContent += `DESCRIPTION:${act.desc}\r\n`;
+      icsContent += `LOCATION:${trip.destination}\r\n`;
+      icsContent += `DTSTART;VALUE=DATE-TIME:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z\r\n`;
+      icsContent += `DTEND;VALUE=DATE-TIME:${new Date(Date.now() + 3600000).toISOString().replace(/[-:]/g, '').split('.')[0]}Z\r\n`;
+      icsContent += "END:VEVENT\r\n";
+    });
+  });
+
+  icsContent += "END:VCALENDAR\r\n";
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = window.URL.createObjectURL(blob);
+  link.setAttribute('download', `${trip.destination.replace(/[^a-z0-9]/gi, '_')}_itinerary.ics`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  showToast("Calendar (.ics) file downloaded! 📅");
+}
+
+function copyShareLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    showToast("Shareable link copied to clipboard! 📋");
+  }).catch(() => {
+    showToast("Link: " + window.location.href);
+  });
+}
+
+// Saved Trips Vault Modal
+function openSavedTripsModal() {
+  const modal = document.getElementById('savedTripsModal');
+  const container = document.getElementById('savedTripsList');
+  if (!modal || !container) return;
+
+  if (appState.savedTrips.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-12 text-slate-400">
+        <p class="text-sm">No saved trips yet. Click "Save Trip" on any generated itinerary!</p>
+      </div>
+    `;
+  } else {
+    container.innerHTML = appState.savedTrips.map(trip => `
+      <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700">
+        <div>
+          <h4 class="font-bold text-slate-900 dark:text-white">${trip.destination}</h4>
+          <span class="text-xs text-slate-500 dark:text-slate-400">${trip.durationDays} Days • ${trip.travelers} • ${trip.budgetTier}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="loadSavedTrip('${trip.id}')" class="px-3 py-1.5 rounded-xl bg-primary-600 text-white text-xs font-bold hover:bg-primary-700 transition">
+            Load
+          </button>
+          <button onclick="deleteSavedTrip('${trip.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition" title="Delete trip">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeSavedTripsModal() {
+  const modal = document.getElementById('savedTripsModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function loadSavedTrip(id) {
+  const trip = appState.savedTrips.find(t => t.id === id);
+  if (trip) {
+    appState.currentTrip = JSON.parse(JSON.stringify(trip));
+    closeSavedTripsModal();
+    switchTab('itinerary');
+    showToast(`Loaded ${trip.destination} itinerary!`);
+  }
+}
+
+function deleteSavedTrip(id) {
+  appState.savedTrips = appState.savedTrips.filter(t => t.id !== id);
+  localStorage.setItem('voyex_saved_trips', JSON.stringify(appState.savedTrips));
+  updateSavedTripsBadge();
+  openSavedTripsModal();
+  showToast("Trip removed from saved vault.");
+}
+
+// Toast Notifications
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('appToastNotification');
+  if (!toast) return;
+
+  toast.innerHTML = message;
+  toast.className = `fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white transition-all duration-300 transform translate-y-0 opacity-100 ${type === 'error' ? 'bg-rose-600' : 'bg-slate-900 dark:bg-primary-600'}`;
+
+  setTimeout(() => {
+    toast.classList.add('translate-y-12', 'opacity-0');
+  }, 3500);
+}
+
+// Event Listeners Registration
+function setupEventListeners() {
+  const tripForm = document.getElementById('aiTripPlannerForm');
+  if (tripForm) {
+    tripForm.addEventListener('submit', handleTripGeneration);
+  }
+
+  const chatForm = document.getElementById('aiChatForm');
+  if (chatForm) {
+    chatForm.addEventListener('submit', handleSendChatMessage);
+  }
+
+  // Dark / Light Mode Toggle
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('voyex_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    });
+  }
+
+  // Mobile menu toggle
+  const mobileToggleBtn = document.getElementById('mobileMenuToggleBtn');
+  if (mobileToggleBtn) {
+    mobileToggleBtn.addEventListener('click', () => {
+      const menu = document.getElementById('mobileNavMenu');
+      if (menu) menu.classList.toggle('hidden');
+    });
+  }
+
+  // Apply stored theme
+  if (localStorage.getItem('voyex_theme') === 'dark' || (!('voyex_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
+
+// ================= TRANSPORT PAGES ================= //
+
+// 1. FLIGHTS TRANSPORT VIEW
+function renderFlightsView() {
+  const container = document.getElementById('flightsViewContent');
+  if (!container) return;
+
+  const dest = appState.currentTrip?.destination || 'Tokyo, Japan';
+  const rate = CURRENCIES[appState.currency].rate;
+  const symbol = CURRENCIES[appState.currency].symbol;
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto space-y-10">
+      <!-- Header Banner -->
+      <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-3xl p-8 sm:p-10 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 backdrop-blur mb-4 inline-block">
+            ✈️ Global Flight Search & Route Intelligence
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-black mb-3">Find & Compare Worldwide Flights</h2>
+          <p class="text-blue-100 text-sm sm:text-base leading-relaxed">Search real-time flight fares, non-stop connections, cabin baggage policies, and airline reviews for your journey to ${dest}.</p>
+        </div>
+        <div class="absolute right-4 -bottom-10 opacity-20 text-9xl select-none pointer-events-none">✈️</div>
+      </div>
+
+      <!-- Quick Flight Search Widget -->
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Flight Route Explorer</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Departure From</label>
+            <input type="text" id="flightOriginInput" value="New York (JFK)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-semibold">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Destination To</label>
+            <input type="text" id="flightDestInput" value="${dest}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-semibold">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cabin Class</label>
+            <select id="flightClassInput" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-semibold">
+              <option>Economy</option>
+              <option>Premium Economy</option>
+              <option>Business Class</option>
+              <option>First Class</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Trip Type</label>
+            <select class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-semibold">
+              <option>Round Trip</option>
+              <option>One Way</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button onclick="launchFlightSearch('google')" class="flex-1 py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow flex items-center justify-center gap-2">
+            Search on Google Flights ↗
+          </button>
+          <button onclick="launchFlightSearch('skyscanner')" class="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow flex items-center justify-center gap-2">
+            Search on Skyscanner ↗
+          </button>
+          <button onclick="launchFlightSearch('kayak')" class="flex-1 py-3 px-4 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow flex items-center justify-center gap-2">
+            Search on Kayak ↗
+          </button>
+        </div>
+      </div>
+
+      <!-- Popular Flight Hubs & Sample Deals -->
+      <div>
+        <h3 class="text-xl font-black text-slate-900 dark:text-white mb-4">Sample Routes & Estimated Fares</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-primary-600 bg-primary-50 dark:bg-primary-900/40 px-2.5 py-1 rounded-lg">Non-Stop Available</span>
+                <span class="text-lg font-black text-slate-900 dark:text-white">${symbol}${Math.round(480 * rate)}</span>
+              </div>
+              <h4 class="font-bold text-base text-slate-900 dark:text-white mb-1">London (LHR) ➔ Tokyo (HND)</h4>
+              <p class="text-xs text-slate-500 mb-4">Avg Duration: 13h 45m • Top Carriers: British Airways, ANA, JAL</p>
+            </div>
+            <button onclick="document.getElementById('flightOriginInput').value='London (LHR)'; launchFlightSearch('google');" class="text-xs font-bold text-primary-600 hover:underline">Check live dates &rarr;</button>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/40 px-2.5 py-1 rounded-lg">Popular Direct</span>
+                <span class="text-lg font-black text-slate-900 dark:text-white">${symbol}${Math.round(350 * rate)}</span>
+              </div>
+              <h4 class="font-bold text-base text-slate-900 dark:text-white mb-1">New York (JFK) ➔ Paris (CDG)</h4>
+              <p class="text-xs text-slate-500 mb-4">Avg Duration: 7h 30m • Top Carriers: Air France, Delta, Norse</p>
+            </div>
+            <button onclick="document.getElementById('flightOriginInput').value='New York (JFK)'; launchFlightSearch('google');" class="text-xs font-bold text-primary-600 hover:underline">Check live dates &rarr;</button>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-purple-600 bg-purple-50 dark:bg-purple-900/40 px-2.5 py-1 rounded-lg">Top Tourist Route</span>
+                <span class="text-lg font-black text-slate-900 dark:text-white">${symbol}${Math.round(220 * rate)}</span>
+              </div>
+              <h4 class="font-bold text-base text-slate-900 dark:text-white mb-1">Dubai (DXB) ➔ Bangkok (BKK)</h4>
+              <p class="text-xs text-slate-500 mb-4">Avg Duration: 6h 15m • Top Carriers: Emirates, Thai Airways</p>
+            </div>
+            <button onclick="document.getElementById('flightOriginInput').value='Dubai (DXB)'; launchFlightSearch('google');" class="text-xs font-bold text-primary-600 hover:underline">Check live dates &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Baggage & Airport Pro Tips -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-slate-50 dark:bg-slate-900/60 p-6 rounded-3xl border border-slate-200 dark:border-slate-800">
+          <h4 class="font-bold text-base text-slate-900 dark:text-white mb-2 flex items-center gap-2">🧳 Carry-On & Baggage Rules</h4>
+          <ul class="text-xs text-slate-600 dark:text-slate-300 space-y-2 list-disc pl-4">
+            <li>Standard international cabin bag size: 55 x 40 x 20 cm (max 7-10 kg).</li>
+            <li>Liquids must be in containers of 100ml (3.4 oz) or less in a clear sealable bag.</li>
+            <li>Lithium power banks must always be in carry-on luggage, never checked.</li>
+          </ul>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-900/60 p-6 rounded-3xl border border-slate-200 dark:border-slate-800">
+          <h4 class="font-bold text-base text-slate-900 dark:text-white mb-2 flex items-center gap-2">⏰ Airport Arrival Guidelines</h4>
+          <ul class="text-xs text-slate-600 dark:text-slate-300 space-y-2 list-disc pl-4">
+            <li>Arrive 3 hours before international departures and 2 hours for domestic flights.</li>
+            <li>Download your airline's mobile app for online check-in 24 hours in advance.</li>
+            <li>Keep digital and printed boarding passes and passport ready at security checkpoints.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function launchFlightSearch(engine) {
+  const origin = encodeURIComponent(document.getElementById('flightOriginInput')?.value || '');
+  const dest = encodeURIComponent(document.getElementById('flightDestInput')?.value || '');
+  let url = `https://www.google.com/travel/flights?q=flights+from+${origin}+to+${dest}`;
+  if (engine === 'skyscanner') {
+    url = `https://www.skyscanner.net/transport/flights-from/${origin}/to/${dest}`;
+  } else if (engine === 'kayak') {
+    url = `https://www.kayak.com/flights/${origin}-${dest}`;
+  }
+  window.open(url, '_blank');
+}
+
+// 2. TRAINS TRANSPORT VIEW
+function renderTrainsView() {
+  const container = document.getElementById('trainsViewContent');
+  if (!container) return;
+
+  const dest = appState.currentTrip?.destination || 'Tokyo, Japan';
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto space-y-10">
+      <!-- Header Banner -->
+      <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-3xl p-8 sm:p-10 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 backdrop-blur mb-4 inline-block">
+            🚆 Scenic High-Speed Rail & Train Passes
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-black mb-3">Scenic & High-Speed Train Travel</h2>
+          <p class="text-emerald-100 text-sm sm:text-base leading-relaxed">Experience comfortable rail journeys, bullet trains, panoramic alpine lines, and global rail passes without airport queues.</p>
+        </div>
+        <div class="absolute right-4 -bottom-10 opacity-20 text-9xl select-none pointer-events-none">🚆</div>
+      </div>
+
+      <!-- Train Search & Rail Pass Hub -->
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Official Rail Ticket & Pass Booking Hub</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Direct access to world-leading train booking platforms and unlimited regional rail passes.</p>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Eurail / Interrail -->
+          <a href="https://www.eurail.com" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🇪🇺</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">Eurail & Interrail Pass</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Unlimited train travel across 33 European countries.</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-600 mt-4">Visit Eurail &rarr;</span>
+          </a>
+
+          <!-- JR Pass Japan -->
+          <a href="https://japanrailpass.net" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🇯🇵</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">Japan Rail Pass (JR Pass)</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ride Shinkansen bullet trains nationwide.</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-600 mt-4">Visit JR Pass &rarr;</span>
+          </a>
+
+          <!-- Trainline -->
+          <a href="https://www.thetrainline.com" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🇬🇧</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">The Trainline</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">UK & European high-speed rail ticket comparison.</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-600 mt-4">Visit Trainline &rarr;</span>
+          </a>
+
+          <!-- Swiss Travel Pass -->
+          <a href="https://www.sbb.ch/en" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🇨🇭</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">SBB Swiss Railways</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Glacier Express & Swiss panoramic alpine passes.</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-600 mt-4">Visit SBB Rail &rarr;</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- World's Top Train Journeys -->
+      <div>
+        <h3 class="text-xl font-black text-slate-900 dark:text-white mb-4">Legendary Train Routes Around the World</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+            <img src="https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=600&q=80" alt="Glacier Express" class="h-40 w-full object-cover">
+            <div class="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 rounded">Switzerland</span>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white mt-1 mb-1">Glacier Express (Zermatt to St. Moritz)</h4>
+                <p class="text-xs text-slate-500 line-clamp-2">The slowest express train in the world across 291 bridges and 91 tunnels through the Alps.</p>
+              </div>
+              <span class="text-xs font-semibold text-slate-400 mt-3">Duration: 8 Hours • Panoramic Glass Roof</span>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+            <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80" alt="Shinkansen" class="h-40 w-full object-cover">
+            <div class="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase text-blue-600 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded">Japan</span>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white mt-1 mb-1">Tokaido Shinkansen (Tokyo to Kyoto)</h4>
+                <p class="text-xs text-slate-500 line-clamp-2">Speeds up to 320 km/h with breathtaking views of Mount Fuji on clear mornings.</p>
+              </div>
+              <span class="text-xs font-semibold text-slate-400 mt-3">Duration: 2h 15m • High Frequency</span>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+            <img src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80" alt="Eurostar" class="h-40 w-full object-cover">
+            <div class="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase text-purple-600 bg-purple-50 dark:bg-purple-900/40 px-2 py-0.5 rounded">UK & France</span>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white mt-1 mb-1">Eurostar (London St Pancras to Paris Gare du Nord)</h4>
+                <p class="text-xs text-slate-500 line-clamp-2">City-center to city-center travel under the English Channel tunnel in total comfort.</p>
+              </div>
+              <span class="text-xs font-semibold text-slate-400 mt-3">Duration: 2h 20m • City Center Arrival</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 3. BUSES TRANSPORT VIEW
+function renderBusesView() {
+  const container = document.getElementById('busesViewContent');
+  if (!container) return;
+
+  const dest = appState.currentTrip?.destination || 'Tokyo, Japan';
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto space-y-10">
+      <!-- Header Banner -->
+      <div class="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 rounded-3xl p-8 sm:p-10 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 backdrop-blur mb-4 inline-block">
+            🚌 Long-Distance Coaches & Intercity Buses
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-black mb-3">Affordable Intercity Bus Routes</h2>
+          <p class="text-amber-100 text-sm sm:text-base leading-relaxed">Budget-friendly ground transit, overnight luxury sleeper coaches, and scenic regional highway express routes.</p>
+        </div>
+        <div class="absolute right-4 -bottom-10 opacity-20 text-9xl select-none pointer-events-none">🚌</div>
+      </div>
+
+      <!-- Bus Search & Booking Platforms -->
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Intercity Coach Booking Providers</h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- FlixBus -->
+          <a href="https://www.flixbus.com" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🟢</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">FlixBus Global</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Europe & USA's largest budget coach network with onboard Wi-Fi and power outlets.</p>
+            </div>
+            <span class="text-xs font-bold text-amber-600 mt-4">Visit FlixBus &rarr;</span>
+          </a>
+
+          <!-- Busbud -->
+          <a href="https://www.busbud.com" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🌍</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">Busbud Worldwide</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Compare prices across 2 million bus routes in 80+ countries.</p>
+            </div>
+            <span class="text-xs font-bold text-amber-600 mt-4">Visit Busbud &rarr;</span>
+          </a>
+
+          <!-- RedBus -->
+          <a href="https://www.redbus.com" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🔴</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">RedBus (Asia & Americas)</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Leading coach booking in India, Southeast Asia, and Latin America.</p>
+            </div>
+            <span class="text-xs font-bold text-amber-600 mt-4">Visit RedBus &rarr;</span>
+          </a>
+
+          <!-- Megabus -->
+          <a href="https://www.megabus.com" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🔵</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">Megabus UK & US</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ultra-low fare express city buses with reserved seating options.</p>
+            </div>
+            <span class="text-xs font-bold text-amber-600 mt-4">Visit Megabus &rarr;</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Essential Bus Travel Tips -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="text-2xl mb-2">🌙</div>
+          <h4 class="font-bold text-sm text-slate-900 dark:text-white mb-1">Overnight Sleeper Buses</h4>
+          <p class="text-xs text-slate-500 leading-relaxed">Save on hotel costs by taking overnight sleeper buses with reclining seats or flat bunks between major cities.</p>
+        </div>
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="text-2xl mb-2">🎒</div>
+          <h4 class="font-bold text-sm text-slate-900 dark:text-white mb-1">Luggage Allowances</h4>
+          <p class="text-xs text-slate-500 leading-relaxed">Most intercity coaches include 1 large hold bag (up to 20kg) and 1 small backpack inside the passenger cabin for free.</p>
+        </div>
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="text-2xl mb-2">⚡</div>
+          <h4 class="font-bold text-sm text-slate-900 dark:text-white mb-1">Amenities Onboard</h4>
+          <p class="text-xs text-slate-500 leading-relaxed">Modern long-haul coaches offer free Wi-Fi, USB charging ports under seats, air conditioning, and onboard restrooms.</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 4. CAR RENTALS & ROAD TRIP HUB
+function renderCarRentalsView() {
+  const container = document.getElementById('carsViewContent');
+  if (!container) return;
+
+  const dest = appState.currentTrip?.destination || 'Tokyo, Japan';
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto space-y-10">
+      <!-- Header Banner -->
+      <div class="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-700 rounded-3xl p-8 sm:p-10 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 backdrop-blur mb-4 inline-block">
+            🚗 Car Rental & Road Trip Navigation
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-black mb-3">Car Rentals & Scenic Drives</h2>
+          <p class="text-violet-100 text-sm sm:text-base leading-relaxed">Find verified car rentals, international permit guidance, insurance checklists, and legendary road trip routes around ${dest}.</p>
+        </div>
+        <div class="absolute right-4 -bottom-10 opacity-20 text-9xl select-none pointer-events-none">🚗</div>
+      </div>
+
+      <!-- Car Rental Booking Platforms -->
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Compare Rental Car Deals</h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Rentalcars.com -->
+          <a href="https://www.rentalcars.com" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🚙</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">Rentalcars.com</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">World's biggest car rental broker with free cancellation options.</p>
+            </div>
+            <span class="text-xs font-bold text-violet-600 mt-4">Compare Deals &rarr;</span>
+          </a>
+
+          <!-- Kayak Cars -->
+          <a href="https://www.kayak.com/cars" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🚘</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">Kayak Car Search</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Search airport and downtown rental lots across 500+ car providers.</p>
+            </div>
+            <span class="text-xs font-bold text-violet-600 mt-4">Search Kayak &rarr;</span>
+          </a>
+
+          <!-- Turo -->
+          <a href="https://turo.com" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">⚡</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">Turo Car Sharing</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Book unique convertibles, Teslas, and vintage cars directly from local hosts.</p>
+            </div>
+            <span class="text-xs font-bold text-violet-600 mt-4">Browse Turo &rarr;</span>
+          </a>
+
+          <!-- Enterprise -->
+          <a href="https://www.enterprise.com" target="_blank" rel="noopener noreferrer" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between">
+            <div>
+              <span class="text-2xl mb-2 block">🏢</span>
+              <h4 class="font-bold text-sm text-slate-900 dark:text-white">Enterprise Rent-A-Car</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Premium reliability with thousands of global airport pick-up desks.</p>
+            </div>
+            <span class="text-xs font-bold text-violet-600 mt-4">Visit Enterprise &rarr;</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Driving Rules & International Permit Guide -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+          <h4 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">📋 International Driving Permit (IDP)</h4>
+          <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            Most countries (Japan, Italy, France, Thailand, UAE) require an official **International Driving Permit** alongside your home driver's license. Obtain an IDP before departing from your local automobile association (e.g. AAA in US, AA in UK/Australia).
+          </p>
+          <div class="p-3 bg-violet-50 dark:bg-violet-900/30 rounded-xl text-xs text-violet-800 dark:text-violet-300">
+            💡 <em>Note:</em> Japan strictly requires the <strong>1949 Geneva Convention</strong> physical booklet permit.
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+          <h4 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">🛣️ Left vs Right Driving Side</h4>
+          <ul class="text-xs text-slate-600 dark:text-slate-300 space-y-2 list-disc pl-4">
+            <li><strong>Drive on the Left:</strong> UK, Japan, Australia, New Zealand, Indonesia, Thailand, India, South Africa.</li>
+            <li><strong>Drive on the Right:</strong> USA, Canada, France, Italy, Switzerland, UAE, Germany, Spain.</li>
+            <li>Always inspect rental car scratch damage and photograph all 4 sides before driving away!</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 5. GROUP TRAVEL SPLIT-BILL & EXPENSE CALCULATOR
+let groupExpenses = [
+  { id: 1, title: "Shibuya Ramen Feast", amount: 60, paidBy: "Alex", splitAmong: ["Alex", "Sarah", "Vijay"] },
+  { id: 2, title: "TeamLab Exhibition Tickets", amount: 90, paidBy: "Sarah", splitAmong: ["Alex", "Sarah", "Vijay"] },
+  { id: 3, title: "Tokyo Tower Taxi", amount: 30, paidBy: "Vijay", splitAmong: ["Alex", "Sarah", "Vijay"] }
+];
+let groupMembers = ["Alex", "Sarah", "Vijay"];
+
+function renderSplitExpensesView() {
+  const container = document.getElementById('splitViewContent');
+  if (!container) return;
+
+  const rate = CURRENCIES[appState.currency].rate;
+  const symbol = CURRENCIES[appState.currency].symbol;
+
+  let totalSpent = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
+  
+  // Calculate Net Balances
+  let balances = {};
+  groupMembers.forEach(m => balances[m] = 0);
+
+  groupExpenses.forEach(exp => {
+    balances[exp.paidBy] += exp.amount;
+    const splitCount = exp.splitAmong.length || 1;
+    const share = exp.amount / splitCount;
+    exp.splitAmong.forEach(person => {
+      balances[person] -= share;
+    });
+  });
+
+  // Calculate settlement transactions
+  let debtors = [];
+  let creditors = [];
+  Object.keys(balances).forEach(person => {
+    const bal = balances[person];
+    if (bal < -0.01) debtors.push({ name: person, amount: -bal });
+    else if (bal > 0.01) creditors.push({ name: person, amount: bal });
+  });
+
+  let settlements = [];
+  let dIdx = 0, cIdx = 0;
+  while (dIdx < debtors.length && cIdx < creditors.length) {
+    const debt = debtors[dIdx];
+    const cred = creditors[cIdx];
+    const settleAmt = Math.min(debt.amount, cred.amount);
+    settlements.push(`${debt.name} pays ${cred.name} ${symbol}${Math.round(settleAmt * rate)}`);
+    debt.amount -= settleAmt;
+    cred.amount -= settleAmt;
+    if (debt.amount < 0.01) dIdx++;
+    if (cred.amount < 0.01) cIdx++;
+  }
+
+  container.innerHTML = `
+    <div class="max-w-4xl mx-auto space-y-8">
+      <div class="text-center max-w-xl mx-auto">
+        <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-2">Group Trip Split-Bill Calculator</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Add shared meals, taxis, and tickets — instantly see who owes whom with zero math stress.</p>
+      </div>
+
+      <!-- Add Expense Form -->
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <h3 class="font-bold text-base text-slate-900 dark:text-white mb-4">➕ Add Shared Expense</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Expense Title</label>
+            <input type="text" id="newExpenseTitle" placeholder="e.g. Dinner, Taxi, Tickets..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Amount (${appState.currency})</label>
+            <input type="number" id="newExpenseAmount" placeholder="e.g. 45" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Paid By</label>
+            <select id="newExpensePaidBy" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm">
+              ${groupMembers.map(m => `<option value="${m}">${m}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <button onclick="addSharedExpense()" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-xl transition shadow">
+          Add Expense to Split
+        </button>
+      </div>
+
+      <!-- Summary Matrix -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Settlement Overview -->
+        <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-3xl p-6 sm:p-8 shadow-lg flex flex-col justify-between">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider opacity-80 block mb-1">Settlement Summary</span>
+            <h3 class="text-2xl font-black mb-4">Total Group Spend: ${symbol}${Math.round(totalSpent * rate)}</h3>
+            
+            <div class="space-y-2 text-sm">
+              ${settlements.length > 0 ? settlements.map(s => `
+                <div class="p-3 bg-white/10 rounded-xl backdrop-blur font-semibold text-xs sm:text-sm">
+                  🤝 ${s}
+                </div>
+              `).join('') : '<p class="text-xs opacity-90">All balances are currently settled!</p>'}
+            </div>
+          </div>
+
+          <button onclick="copySettlementSummary()" class="mt-6 py-2.5 px-4 bg-white text-emerald-800 font-bold text-xs rounded-xl hover:bg-emerald-50 transition shadow">
+            📋 Copy Settlement for Group Chat
+          </button>
+        </div>
+
+        <!-- Expense History -->
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+          <h3 class="font-bold text-base text-slate-900 dark:text-white mb-4">Expense Log</h3>
+          <div class="space-y-3 overflow-y-auto max-h-64 flex-1">
+            ${groupExpenses.map((exp, idx) => `
+              <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-xs">
+                <div>
+                  <span class="font-bold text-slate-900 dark:text-white block">${exp.title}</span>
+                  <span class="text-slate-500">Paid by ${exp.paidBy}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-slate-900 dark:text-white">${symbol}${Math.round(exp.amount * rate)}</span>
+                  <button onclick="deleteSharedExpense(${idx})" class="text-rose-500 hover:text-rose-700 p-1">✕</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function addSharedExpense() {
+  const title = document.getElementById('newExpenseTitle')?.value.trim();
+  const amt = parseFloat(document.getElementById('newExpenseAmount')?.value) || 0;
+  const paidBy = document.getElementById('newExpensePaidBy')?.value;
+
+  if (!title || amt <= 0) {
+    showToast('Please enter a valid expense title and amount!', 'error');
+    return;
+  }
+
+  groupExpenses.push({
+    id: Date.now(),
+    title: title,
+    amount: amt,
+    paidBy: paidBy,
+    splitAmong: [...groupMembers]
+  });
+
+  renderSplitExpensesView();
+  showToast(`Added ${title} (${CURRENCIES[appState.currency].symbol}${amt})`);
+}
+
+function deleteSharedExpense(idx) {
+  groupExpenses.splice(idx, 1);
+  renderSplitExpensesView();
+  showToast('Expense removed.');
+}
+
+function copySettlementSummary() {
+  showToast('Settlement copied to clipboard! 📋');
+}
+
+// 6. PHOTO SPOTS & SUNSET GUIDE
+function renderPhotoSpotsView() {
+  const container = document.getElementById('photosViewContent');
+  if (!container) return;
+
+  const dest = appState.currentTrip?.destination || 'Tokyo, Japan';
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto space-y-10">
+      <!-- Header Banner -->
+      <div class="bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600 rounded-3xl p-8 sm:p-10 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 backdrop-blur mb-4 inline-block">
+            📸 Photography, Golden Hour & Drone Guide
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-black mb-3">Top Photo Spots & Viewpoints</h2>
+          <p class="text-pink-100 text-sm sm:text-base leading-relaxed">Capture breathtaking memories, golden hour vistas, and cinematic skyline compositions in ${dest}.</p>
+        </div>
+        <div class="absolute right-4 -bottom-10 opacity-20 text-9xl select-none pointer-events-none">📸</div>
+      </div>
+
+      <!-- Curated Photo Locations -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+          <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80" alt="Sunset Viewpoint" class="w-full h-44 object-cover">
+          <div class="p-5">
+            <span class="text-[10px] font-bold uppercase text-rose-600 bg-rose-50 dark:bg-rose-900/40 px-2 py-0.5 rounded">Golden Hour 🌅</span>
+            <h4 class="font-bold text-base text-slate-900 dark:text-white mt-1 mb-1">Rooftop Panoramic Observation Deck</h4>
+            <p class="text-xs text-slate-500 mb-3">Best Time: 30 minutes before sunset for the transition from golden light to neon twilight.</p>
+            <span class="text-xs font-semibold text-primary-600">Tip: Use a wide-angle lens (16-24mm) for expansive horizons.</span>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+          <img src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80" alt="Historic Street" class="w-full h-44 object-cover">
+          <div class="p-5">
+            <span class="text-[10px] font-bold uppercase text-blue-600 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded">Blue Hour 🌃</span>
+            <h4 class="font-bold text-base text-slate-900 dark:text-white mt-1 mb-1">Lantern-Lit Historic Alleys</h4>
+            <p class="text-xs text-slate-500 mb-3">Best Time: Blue hour (right after sunset) when paper lanterns glow with vibrant contrast.</p>
+            <span class="text-xs font-semibold text-primary-600">Tip: High aperture (f/1.8) for beautiful bokeh portraits.</span>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+          <img src="https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=600&q=80" alt="Nature Vista" class="w-full h-44 object-cover">
+          <div class="p-5">
+            <span class="text-[10px] font-bold uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 rounded">Sunrise 🌄</span>
+            <h4 class="font-bold text-base text-slate-900 dark:text-white mt-1 mb-1">Reflecting Alpine Waters & Lakes</h4>
+            <p class="text-xs text-slate-500 mb-3">Best Time: Early dawn before morning breezes create ripples on the water surface.</p>
+            <span class="text-xs font-semibold text-primary-600">Tip: Bring a polarizing filter (CPL) to cut water glare.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drone Regulations & Tripod Rules -->
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <h4 class="font-bold text-base text-slate-900 dark:text-white mb-3 flex items-center gap-2">🚁 Drone Flying & Camera Tripod Guidelines</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 dark:text-slate-300">
+          <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl">
+            <strong class="text-slate-900 dark:text-white block mb-1">🔒 Urban Drone Restrictions</strong>
+            Flying drones over crowded city centers (Tokyo, Paris, Rome, NYC) is strictly prohibited without federal aviation permits. Fly only in designated open rural zones.
+          </div>
+          <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl">
+            <strong class="text-slate-900 dark:text-white block mb-1">📸 Tripod Etiquette at Monuments</strong>
+            Large tripods and selfie sticks are banned inside historic temples and museums (like the Louvre, Sensō-ji, and Vatican). Use handheld stabilization or small magnetic clamps.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 7. SAFETY ALERTS & COMMON TRAVEL SCAMS ADVISOR
+function renderSafetyScamsView() {
+  const container = document.getElementById('safetyViewContent');
+  if (!container) return;
+
+  const dest = appState.currentTrip?.destination || 'Tokyo, Japan';
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto space-y-10">
+      <!-- Header Banner -->
+      <div class="bg-gradient-to-r from-red-600 via-rose-700 to-amber-700 rounded-3xl p-8 sm:p-10 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 backdrop-blur mb-4 inline-block">
+            🛡️ Travel Safety, Scam Protection & Emergency Hub
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-black mb-3">Travel Safety & Scam Alerts</h2>
+          <p class="text-red-100 text-sm sm:text-base leading-relaxed">Stay secure, recognize tourist scam tactics, and keep essential emergency numbers ready for ${dest}.</p>
+        </div>
+        <div class="absolute right-4 -bottom-10 opacity-20 text-9xl select-none pointer-events-none">🛡️</div>
+      </div>
+
+      <!-- Known Tourist Scams & Defenses -->
+      <div>
+        <h3 class="text-xl font-black text-slate-900 dark:text-white mb-4">Top Common Tourist Scams to Avoid</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
+            <span class="text-2xl">🚕</span>
+            <h4 class="font-bold text-base text-slate-900 dark:text-white">"Broken Meter" Taxi Scam</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">Driver claims the taxi meter is broken and charges 5x the regular rate upon arrival.</p>
+            <div class="pt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              ✓ Defense: Insist on turning on the meter or use ride-hailing apps (Uber, Grab, GO).
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
+            <span class="text-2xl">🤝</span>
+            <h4 class="font-bold text-base text-slate-900 dark:text-white">"Friendship Bracelet" or Flower</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">A stranger forcibly ties a string bracelet on your wrist or hands you a rose, then demands aggressive cash.</p>
+            <div class="pt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              ✓ Defense: Keep hands in pockets near tourist squares and walk away with a firm "No".
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
+            <span class="text-2xl">🏛️</span>
+            <h4 class="font-bold text-base text-slate-900 dark:text-white">"Temple / Palace is Closed"</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">A friendly local tells you the monument is closed for a holiday and offers a detour to an overpriced gem store.</p>
+            <div class="pt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              ✓ Defense: Walk directly to the official ticket counter to verify operating hours.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency SOS Card -->
+      <div class="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl">
+        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">🚨 Universal Travel Safety Checklist</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+          <div class="p-4 bg-white/10 rounded-2xl">
+            <span class="font-bold block text-amber-400 mb-1">1. Digital Passport Copies</span>
+            Keep encrypted PDF scans of passports and visas in cloud storage and offline on your phone.
+          </div>
+          <div class="p-4 bg-white/10 rounded-2xl">
+            <span class="font-bold block text-amber-400 mb-1">2. Credit Card Freeze</span>
+            Save your bank's international 24/7 hotline to instantly lock lost cards.
+          </div>
+          <div class="p-4 bg-white/10 rounded-2xl">
+            <span class="font-bold block text-amber-400 mb-1">3. Travel Insurance</span>
+            Always ensure emergency medical evacuation coverage is active.
+          </div>
+          <div class="p-4 bg-white/10 rounded-2xl">
+            <span class="font-bold block text-amber-400 mb-1">4. Offline Maps</span>
+            Download Google Maps or Maps.me offline packs before leaving hotel Wi-Fi.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 8. AI API KEY SETTINGS MODAL
+function openApiKeyModal() {
+  const modal = document.getElementById('apiKeyModal');
+  const input = document.getElementById('geminiApiKeyInput');
+  if (input) input.value = appState.apiKey || '';
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeApiKeyModal() {
+  const modal = document.getElementById('apiKeyModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function saveApiKey() {
+  const input = document.getElementById('geminiApiKeyInput');
+  if (input) {
+    appState.apiKey = input.value.trim();
+    localStorage.setItem('voyex_gemini_key', appState.apiKey);
+    closeApiKeyModal();
+    showToast('AI Settings updated successfully! 🔑');
+  }
+}
+
+function clearApiKey() {
+  appState.apiKey = '';
+  localStorage.removeItem('voyex_gemini_key');
+  const input = document.getElementById('geminiApiKeyInput');
+  if (input) input.value = '';
+  closeApiKeyModal();
+  showToast('AI API Key cleared.');
+}
+
+
+
+</script>
+</body>
+</html>

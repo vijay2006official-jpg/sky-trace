@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voyex AI - Smart AI Travel Planner & Route Explorer</title>
+  <meta name="description" content="Generate personalized day-by-day travel itineraries, interactive route maps, budget breakdowns, and smart packing checklists powered by AI.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#172554',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS for Interactive Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Canvas Confetti for Celebration Animation -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    
+    /* Smooth Map Styling */
+    .leaflet-container { width: 100%; height: 100%; border-radius: 1.5rem; z-index: 10; }
+    
+    /* Print Styles for Itinerary Export */
+    @media print {
+      body { background: white !important; color: black !important; }
+      nav, footer, .no-print, #aiChatDrawer, #aiChatFloatingBtn, #themeToggleBtn { display: none !important; }
+      .app-section { display: block !important; }
+      #section-planner, #section-destinations, #section-packing, #section-booking, #section-map { display: none !important; }
+      #section-itinerary { display: block !important; }
+      .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl { box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-primary-500 selection:text-white transition-colors duration-200">
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <a href="javascript:void(0)" onclick="switchTab('planner')" class="flex items-center gap-3 group">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-primary-500/25 group-hover:scale-105 transition-transform">
+          ✈️
+        </div>
+        <div>
+          <span class="text-xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+            Voyex <span class="text-primary-600">AI</span>
+          </span>
+          <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400 block -mt-1">Smart Travel Master</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Tabs -->
+      <nav class="hidden lg:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
+        <button onclick="switchTab('planner')" data-tab="planner" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all bg-primary-600 text-white shadow-md shadow-primary-500/20">
+          Plan Trip
+        </button>
+        <button onclick="switchTab('itinerary')" data-tab="itinerary" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Itinerary
+        </button>
+        <button onclick="switchTab('flights')" data-tab="flights" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          ✈️ Flights
+        </button>
+        <button onclick="switchTab('trains')" data-tab="trains" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          🚆 Trains
+        </button>
+        <button onclick="switchTab('buses')" data-tab="buses" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          🚌 Buses
+        </button>
+        <button onclick="switchTab('cars')" data-tab="cars" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          🚗 Car Rental
+        </button>
+        <button onclick="switchTab('split')" data-tab="split" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          👥 Split Bill
+        </button>
+        <button onclick="switchTab('photos')" data-tab="photos" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          📸 Photo Spots
+        </button>
+        <button onclick="switchTab('safety')" data-tab="safety" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          🛡️ Safety
+        </button>
+        <button onclick="switchTab('map')" data-tab="map" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Route Map
+        </button>
+        <button onclick="switchTab('destinations')" data-tab="destinations" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Cities
+        </button>
+        <button onclick="switchTab('budget')" data-tab="budget" class="nav-tab-btn px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Budget
+        </button>
+        <button onclick="switchTab('packing')" data-tab="packing" class="nav-tab-btn px-4 py-2 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Packing
+        </button>
+        <button onclick="switchTab('visa')" data-tab="visa" class="nav-tab-btn px-4 py-2 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Visa & Culture
+        </button>
+        <button onclick="switchTab('booking')" data-tab="booking" class="nav-tab-btn px-4 py-2 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+          Booking Hub
+        </button>
+      </nav>
+
+      <!-- Right Action Items -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Currency Switcher -->
+        <button onclick="switchTab('budget')" id="navbarCurrencyBtn" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Change currency">
+          USD ($)
+        </button>
+
+        <!-- AI API Key Settings -->
+        <button onclick="openApiKeyModal()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="AI Settings / API Key">
+          🔑
+        </button>
+
+        <!-- Saved Trips Vault -->
+        <button onclick="openSavedTripsModal()" class="relative p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Saved Trips Vault">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+          <span id="savedTripsCountBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white rounded-full text-[10px] font-bold items-center justify-center">0</span>
+        </button>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button id="themeToggleBtn" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+          <svg class="w-5 h-5 hidden dark:block text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path></svg>
+          <svg class="w-5 h-5 block dark:hidden text-slate-700" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+        </button>
+
+        <!-- Mobile Menu Hamburger -->
+        <button id="mobileMenuToggleBtn" class="lg:hidden p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer Menu -->
+    <div id="mobileNavMenu" class="hidden lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-2 pb-6 space-y-1">
+      <button onclick="switchTab('planner')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Plan Trip</button>
+      <button onclick="switchTab('itinerary')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Itinerary</button>
+      <button onclick="switchTab('flights')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">✈️ Flight Transport</button>
+      <button onclick="switchTab('trains')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">🚆 Train Transport</button>
+      <button onclick="switchTab('buses')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">🚌 Bus Transport</button>
+      <button onclick="switchTab('cars')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">🚗 Car Rentals</button>
+      <button onclick="switchTab('split')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">👥 Split Bill Calculator</button>
+      <button onclick="switchTab('photos')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">📸 Photo Spots & Sunset</button>
+      <button onclick="switchTab('safety')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">🛡️ Safety & Scams</button>
+      <button onclick="switchTab('map')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Route Map</button>
+      <button onclick="switchTab('destinations')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Explore Cities</button>
+      <button onclick="switchTab('budget')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Budget & Currency</button>
+      <button onclick="switchTab('packing')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Packing Checklist</button>
+      <button onclick="switchTab('visa')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Visa & Culture</button>
+      <button onclick="switchTab('booking')" class="w-full text-left px-4 py-2.5 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Booking Hub</button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- TAB 1: PLAN TRIP & HERO -->
+    <section id="section-planner" class="app-section space-y-12">
+      <!-- Hero Header -->
+      <div class="text-center max-w-3xl mx-auto pt-6 pb-2">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 mb-4">
+          ✨ Next-Gen AI Travel Architect
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">
+          Design your dream journey with <span class="bg-clip-text text-transparent bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600">Intelligent Precision</span>
+        </h1>
+        <p class="text-slate-600 dark:text-slate-300 text-base sm:text-lg leading-relaxed">
+          Instant multi-day itineraries, interactive route mapping, budget estimation, packing checklists, and local cultural guidance.
+        </p>
+      </div>
+
+      <!-- AI Generator Form Wizard Card -->
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-xl max-w-4xl mx-auto">
+        <form id="aiTripPlannerForm" class="space-y-6">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Destination Input -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Where do you want to go? 📍
+              </label>
+              <div class="relative">
+                <input type="text" id="plannerDestination" value="Tokyo, Japan" placeholder="e.g. Tokyo, Paris, Bali, Rome, New York, Swiss Alps..." class="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-base focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
+                <div class="absolute right-4 top-4 text-slate-400 text-lg">✈️</div>
+              </div>
+              <div class="flex flex-wrap gap-2 mt-2 text-xs">
+                <span class="text-slate-400">Popular:</span>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Tokyo, Japan'" class="text-primary-600 hover:underline">Tokyo</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Paris, France'" class="text-primary-600 hover:underline">Paris</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Bali, Indonesia'" class="text-primary-600 hover:underline">Bali</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Rome, Italy'" class="text-primary-600 hover:underline">Rome</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Dubai, UAE'" class="text-primary-600 hover:underline">Dubai</button>
+                <button type="button" onclick="document.getElementById('plannerDestination').value='Swiss Alps, Switzerland'" class="text-primary-600 hover:underline">Swiss Alps</button>
+              </div>
+            </div>
+
+            <!-- Trip Duration -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Duration (Days) 📅
+              </label>
+              <select id="plannerDuration" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="1">1 Day Express</option>
+                <option value="2">2 Days Weekend</option>
+                <option value="3" selected>3 Days Perfect Getaway</option>
+                <option value="4">4 Days Explorer</option>
+                <option value="5">5 Days Immersive</option>
+                <option value="7">7 Days Complete Week</option>
+                <option value="10">10 Days Grand Tour</option>
+                <option value="14">14 Days Epic Expedition</option>
+              </select>
+            </div>
+
+            <!-- Start Date -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Departure Date 🛫
+              </label>
+              <input type="date" id="plannerStartDate" class="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+
+            <!-- Travelers -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Who is Traveling? 👥
+              </label>
+              <select id="plannerTravelers" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="Solo Traveler">Solo Explorer</option>
+                <option value="Couple" selected>Couple / Romantic</option>
+                <option value="Family with Kids">Family with Kids</option>
+                <option value="Group of Friends">Group of Friends</option>
+              </select>
+            </div>
+
+            <!-- Travel Style -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Travel Style / Vibe 🎯
+              </label>
+              <select id="plannerStyle" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="Culture & Foodie" selected>Culture, History & Foodie</option>
+                <option value="Adventure & Nature">Adventure, Hiking & Nature</option>
+                <option value="Relaxation & Wellness">Relaxation, Beach & Wellness</option>
+                <option value="Luxury & Exclusive">Luxury, Fine Dining & Shopping</option>
+                <option value="Budget Backpacker">Budget Backpacker / Street Food</option>
+              </select>
+            </div>
+
+            <!-- Budget Level -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Budget Tier 💰
+              </label>
+              <select id="plannerBudget" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="Budget ($)">Economy / Budget Friendly ($)</option>
+                <option value="Moderate ($$)" selected>Balanced / Moderate ($$)</option>
+                <option value="Luxury ($$$)">Premium / Luxury ($$$)</option>
+              </select>
+            </div>
+
+            <!-- Pace -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Trip Pace ⏱️
+              </label>
+              <select id="plannerPace" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="Relaxed">Relaxed (1-2 main sights daily)</option>
+                <option value="Balanced" selected>Balanced (3-4 sights & dining)</option>
+                <option value="Packed / Fast">Fast-Paced (Maximum coverage)</option>
+              </select>
+            </div>
+
+            <!-- Custom Preferences -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                Special Interests or Requests (Optional) 📝
+              </label>
+              <input type="text" id="plannerInterests" placeholder="e.g. Vegetarian food spots, photography viewpoints, vintage shopping..." class="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-4">
+            <button type="submit" id="generateTripBtn" class="w-full py-4 rounded-2xl bg-gradient-to-r from-primary-600 via-indigo-600 to-primary-700 hover:opacity-95 text-white font-extrabold text-base shadow-xl shadow-primary-600/30 transition transform hover:-translate-y-0.5">
+              ✨ Generate AI Travel Masterplan
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Quick Feature Showcase -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto pt-6">
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+          <div class="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">🗺️</div>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white mb-2">Interactive Route Maps</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">View daily stops linked sequentially on Leaflet maps with walking paths.</p>
+        </div>
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+          <div class="w-12 h-12 bg-purple-50 dark:bg-purple-900/30 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">💰</div>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white mb-2">Smart Budget Intelligence</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Real-time cost estimates and instant multi-currency conversions.</p>
+        </div>
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+          <div class="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">📅</div>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white mb-2">1-Click Calendar Sync</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Directly export your itinerary into Apple, Google, or Outlook Calendar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ITINERARY VIEW -->
+    <section id="section-itinerary" class="app-section hidden">
+      <div id="itineraryContent">
+        <!-- Rendered dynamically via app.js -->
+      </div>
+    </section>
+
+    <!-- TAB: FLIGHTS TRANSPORT -->
+    <section id="section-flights" class="app-section hidden space-y-8">
+      <div id="flightsViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: TRAINS TRANSPORT -->
+    <section id="section-trains" class="app-section hidden space-y-8">
+      <div id="trainsViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: BUSES TRANSPORT -->
+    <section id="section-buses" class="app-section hidden space-y-8">
+      <div id="busesViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: CAR RENTALS -->
+    <section id="section-cars" class="app-section hidden space-y-8">
+      <div id="carsViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: SPLIT BILL CALCULATOR -->
+    <section id="section-split" class="app-section hidden space-y-8">
+      <div id="splitViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: PHOTO SPOTS -->
+    <section id="section-photos" class="app-section hidden space-y-8">
+      <div id="photosViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB: SAFETY & SCAMS -->
+    <section id="section-safety" class="app-section hidden space-y-8">
+      <div id="safetyViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB 3: ROUTE MAP -->
+    <section id="section-map" class="app-section hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-3xl font-black text-slate-900 dark:text-white">Interactive Route Map</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Numbered destination pins for daily itinerary stops</p>
+        </div>
+        <!-- Day Selector Buttons -->
+        <div id="mapDaySelector" class="flex flex-wrap gap-2">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-lg h-[550px]">
+        <div id="leafletMapContainer" class="w-full h-full rounded-2xl"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: EXPLORE DESTINATIONS -->
+    <section id="section-destinations" class="app-section hidden space-y-8">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mb-2">Curated Global Destinations</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Select any world city to explore highlights and pre-fill your AI travel masterplan.</p>
+      </div>
+
+      <div id="destinationsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Rendered dynamically from destinations.js -->
+      </div>
+    </section>
+
+    <!-- TAB 5: BUDGET & CURRENCY -->
+    <section id="section-budget" class="app-section hidden space-y-8">
+      <div class="text-center max-w-xl mx-auto">
+        <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-2">Budget & Cost Visualizer</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Real-time expenditure forecasts across accommodations, dining, sights, and transit.</p>
+      </div>
+      <div id="budgetViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB 6: PACKING CHECKLIST -->
+    <section id="section-packing" class="app-section hidden space-y-8">
+      <div id="packingViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB 7: VISA & CULTURE -->
+    <section id="section-visa" class="app-section hidden space-y-8">
+      <div class="text-center max-w-xl mx-auto">
+        <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-2">Visa, Etiquette & Audio Phrasebook</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Key cultural customs, audio pronunciations, and emergency helpline numbers.</p>
+      </div>
+      <div id="visaCultureContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB 8: BOOKING HUB -->
+    <section id="section-booking" class="app-section hidden space-y-8">
+      <div id="bookingViewContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= FLOATING AI CONCIERGE BUTTON ================= -->
+  <button id="aiChatFloatingBtn" onclick="toggleChatDrawer()" class="no-print fixed bottom-6 right-6 z-40 px-4 py-3 rounded-2xl bg-gradient-to-r from-primary-600 to-indigo-600 text-white font-bold text-sm shadow-2xl shadow-primary-600/40 hover:scale-105 transition-transform flex items-center gap-2.5">
+    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+    🤖 AI Concierge
+  </button>
+
+  <!-- ================= AI CONCIERGE CHAT DRAWER ================= -->
+  <div id="aiChatDrawer" class="no-print hidden fixed bottom-20 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col h-[500px]">
+    <div class="p-4 bg-gradient-to-r from-primary-600 to-indigo-600 text-white flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm">🤖</div>
+        <div>
+          <h4 class="font-bold text-sm">Voyex AI Concierge</h4>
+          <span class="text-[10px] opacity-80">Online • 24/7 Travel Guide</span>
+        </div>
+      </div>
+      <button onclick="toggleChatDrawer()" class="p-1 hover:bg-white/20 rounded-lg text-white">✕</button>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="chatMessagesContainer" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950">
+      <!-- Dynamic messages -->
+    </div>
+
+    <!-- Chat Input Form -->
+    <form id="aiChatForm" class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
+      <input type="text" id="chatInputMessage" placeholder="Ask about food, weather, safety..." class="flex-1 px-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
+      <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition">Send</button>
+    </form>
+  </div>
+
+  <!-- ================= EXPORT & SHARE MODAL ================= -->
+  <div id="exportShareModal" class="no-print hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-black text-slate-900 dark:text-white">Export & Share Trip</h3>
+        <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">✕</button>
+      </div>
+
+      <!-- QR Code View -->
+      <div class="text-center">
+        <span class="text-xs font-semibold text-slate-500 block mb-3">Scan with phone camera to open on mobile:</span>
+        <div id="qrCodeContainer" class="py-2"></div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-3 pt-2">
+        <button onclick="downloadCalendarICS()" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-xl transition shadow flex items-center justify-center gap-2">
+          📅 Download .ICS (Apple & Google Calendar)
+        </button>
+        <button onclick="copyShareLink()" class="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm rounded-xl transition flex items-center justify-center gap-2">
+          📋 Copy Shareable Web Link
+        </button>
+        <button onclick="window.print(); closeExportModal();" class="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm rounded-xl transition flex items-center justify-center gap-2">
+          🖨️ Print / Save as PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SAVED TRIPS VAULT MODAL ================= -->
+  <div id="savedTripsModal" class="no-print hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-xl font-black text-slate-900 dark:text-white">Saved Trips Vault</h3>
+          <p class="text-xs text-slate-400">Stored locally in your web browser</p>
+        </div>
+        <button onclick="closeSavedTripsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">✕</button>
+      </div>
+
+      <div id="savedTripsList" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= API KEY MODAL ================= -->
+  <div id="apiKeyModal" class="no-print hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🔑</span>
+          <div>
+            <h3 class="text-lg font-black text-slate-900 dark:text-white">AI Engine Settings</h3>
+            <span class="text-[10px] text-slate-400">Bring Your Own Key (Optional)</span>
+          </div>
+        </div>
+        <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-600 dark:text-slate-300">
+        <p>By default, Voyex AI uses intelligent built-in destination intelligence. You can optionally connect your personal <strong>Google Gemini API Key</strong> for live infinite AI reasoning.</p>
+        
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Google Gemini API Key</label>
+          <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs">
+          <span class="text-[10px] text-slate-400 mt-1 block">Keys are stored locally only in your web browser.</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="saveApiKey()" class="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-xl transition shadow">
+          Save Settings
+        </button>
+        <button onclick="clearApiKey()" class="py-3 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-rose-500 font-bold text-xs rounded-xl transition">
+          Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TOAST NOTIFICATION CONTAINER ================= -->
+  <div id="appToastNotification" class="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white transition-all duration-300 transform translate-y-12 opacity-0 pointer-events-none"></div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-10 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center text-sm font-bold">✈️</div>
+        <div>
+          <span class="font-bold text-slate-900 dark:text-white text-sm">Voyex AI</span>
+          <span class="text-xs text-slate-400 block">World-Class Smart Travel Platform</span>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-6 text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <a href="javascript:void(0)" onclick="switchTab('planner')" class="hover:text-primary-600">Planner</a>
+        <a href="javascript:void(0)" onclick="switchTab('destinations')" class="hover:text-primary-600">Destinations</a>
+        <a href="javascript:void(0)" onclick="switchTab('budget')" class="hover:text-primary-600">Currencies</a>
+        <a href="javascript:void(0)" onclick="switchTab('booking')" class="hover:text-primary-600">Flights & Hotels</a>
+        <a href="javascript:void(0)" onclick="switchTab('visa')" class="hover:text-primary-600">Visa Guide</a>
+      </div>
+
+      <p class="text-xs text-slate-400 text-center md:text-right">
+        &copy; 2026 Voyex AI. Ready for public hosting & custom domain.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Core Scripts -->
+  <script src="destinations.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
